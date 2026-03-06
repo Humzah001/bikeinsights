@@ -1,0 +1,7 @@
+id,name,brand,model,color,serial_number,status,purchase_date,purchase_price,weekly_rate,tracker_share_url,image_filename,notes,created_at,last_latitude,last_longitude
+bike-1,Electric Cruiser A,Bosch,Cruiser Pro,Black,EBC001,available,2023-01-15,1200,85,https://www.icloud.com/findmy/, ,Sample bike 1,2024-01-01T00:00:00Z,51.5074,-0.1278
+bike-2,City Runner B,Shimano,City 500,Blue,CRB002,rented,2023-03-20,950,70,https://www.icloud.com/findmy/, ,Sample bike 2,2024-01-01T00:00:00Z,51.5150,-0.1420
+bike-3,Mountain Explorer,Giant,Explore E+,Green,ME003,available,2022-11-10,1400,95,https://www.icloud.com/findmy/, ,Sample bike 3,2024-01-01T00:00:00Z,51.5100,-0.1300
+bike-4,Urban Glide,Specialized,Vado SL,Silver,UG004,under_repair,2023-06-01,1600,100,https://www.icloud.com/findmy/, ,Sample bike 4,2024-01-01T00:00:00Z,,
+bike-5,Weekend Warrior,Trek,Allant+ 8,Red,WW005,available,2023-02-14,1100,80,https://www.icloud.com/findmy/, ,Sample bike 5,2024-01-01T00:00:00Z,51.5200,-0.1350
+bike-6,Old Faithful,Bosch,Classic 2020,Gray,OF006,retired,2020-08-01,800,0,https://www.icloud.com/findmy/, ,Retired bike,2024-01-01T00:00:00Z,,

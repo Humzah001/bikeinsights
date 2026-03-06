@@ -1,0 +1,4 @@
+id,type,bike_id,bike_name,rental_id,customer_name,customer_phone,message,is_read,created_at
+notif-1,rent_overdue,bike-1,Electric Cruiser A,rent-5,Tom Jones,+447700900654,Rental rent-5 (Electric Cruiser A) is overdue. Customer: Tom Jones,false,2025-03-01T00:00:00Z
+notif-2,payment_pending,bike-2,City Runner B,rent-1,John Smith,+447700900123,Payment pending for rental rent-1. Customer: John Smith,false,2025-02-05T00:00:00Z
+notif-3,rent_due_soon,bike-4,Urban Glide,rent-10,Lisa White,+447700900471,Rental ending soon for Urban Glide. Customer: Lisa White,true,2024-11-12T00:00:00Z

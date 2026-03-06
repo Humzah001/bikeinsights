@@ -1,0 +1,7 @@
+id,bike_id,bike_name,category,description,amount,date,receipt_filename,notes,created_at
+exp-1,bike-1,Electric Cruiser A,cleaning,Deep clean and polish,15,2025-02-01, , ,2025-02-01T00:00:00Z
+exp-2, ,General,insurance,Fleet insurance Q1,200,2025-01-15, , ,2025-01-15T00:00:00Z
+exp-3, ,General,storage,Lock-up rental Feb,120,2025-02-01, , ,2025-02-01T00:00:00Z
+exp-4,bike-2,City Runner B,accessories,New pannier bags,40,2025-02-10, , ,2025-02-10T00:00:00Z
+exp-5,bike-3,Mountain Explorer,cleaning,Cleaning supplies,12,2025-02-20, , ,2025-02-20T00:00:00Z
+exp-6, ,General,other,Misc admin,25,2025-03-01, , ,2025-03-01T00:00:00Z
