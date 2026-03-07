@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -146,7 +146,7 @@ export default function TrackerPage() {
           <form onSubmit={handleAddAirTag} className="space-y-4">
             <div className="space-y-2">
               <Label>Bike</Label>
-              <Select value={selectedBikeId} onValueChange={setSelectedBikeId}>
+              <Select value={selectedBikeId} onValueChange={(v) => setSelectedBikeId(v ?? "")}>
                 <SelectTrigger className="w-full max-w-xs">
                   <SelectValue placeholder="Select bike" />
                 </SelectTrigger>
