@@ -13,7 +13,8 @@ export type NotificationType =
   | "rent_overdue"
   | "rent_due_soon"
   | "repair_due"
-  | "payment_pending";
+  | "payment_pending"
+  | "week_rent_pending";
 
 export interface Bike {
   id: string;
@@ -45,6 +46,7 @@ export interface Rental {
   end_date: string;
   weekly_rate: string;
   total_amount: string;
+  amount_paid?: string; // running total received (weekly payments)
   weeks: string;
   status: RentalStatus;
   payment_status: PaymentStatus;

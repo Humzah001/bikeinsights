@@ -1,6 +1,7 @@
-import { addDays, isBefore, parseISO } from "date-fns";
+import { addDays, isBefore, parseISO, format } from "date-fns";
 import { readCSV, appendCSV, writeCSV } from "@/lib/csv";
 import type { Notification, Rental } from "@/lib/types";
+import { getWeeksWithPendingRent, getRentDueTuesdayForWeek } from "@/lib/calculations";
 import { v4 as uuidv4 } from "uuid";
 
 const NOTIFICATION_DAYS_DUE_SOON = 2;
@@ -100,6 +101,66 @@ export async function getOrCreateDueSoonAndPaymentPendingNotifications(): Promis
           created_at: new Date().toISOString(),
         });
       }
+    }
+  }
+}
+
+/** Create notifications for each week where Tuesday has passed but that week's rent is not paid. Rent due every Tuesday. */
+export async function ensureWeeklyRentNotifications(): Promise<void> {
+  const rentals = await readCSV<Rental>("rentals.csv");
+  const existing = await readCSV<Notification>("notifications.csv");
+  const today = new Date();
+
+  for (const r of rentals) {
+    if (r.status !== "active" && r.status !== "overdue") continue;
+    if (r.payment_status === "paid") continue;
+
+    const pendingWeeks = getWeeksWithPendingRent(
+      {
+        start_date: r.start_date,
+        weeks: r.weeks,
+        weekly_rate: r.weekly_rate,
+        amount_paid: r.amount_paid,
+      },
+      today
+    );
+
+    for (const weekNum of pendingWeeks) {
+      const dueDate = getRentDueTuesdayForWeek(r.start_date, weekNum);
+      const dueStr = format(dueDate, "EEE, d MMM yyyy");
+      const message = `Week ${weekNum} rent overdue – ${r.bike_name}, ${r.customer_name}. Was due Tuesday ${dueStr}.`;
+      const alreadyExists = existing.some(
+        (n) =>
+          n.rental_id === r.id &&
+          n.type === "week_rent_pending" &&
+          n.message.includes(`Week ${weekNum} rent overdue`)
+      );
+      if (alreadyExists) continue;
+
+      await appendCSV<Notification>("notifications.csv", {
+        id: `notif-${uuidv4().slice(0, 8)}`,
+        type: "week_rent_pending",
+        bike_id: r.bike_id,
+        bike_name: r.bike_name,
+        rental_id: r.id,
+        customer_name: r.customer_name,
+        customer_phone: r.customer_phone,
+        message,
+        is_read: "false",
+        created_at: new Date().toISOString(),
+      });
+      existing.push({
+        id: "",
+        type: "week_rent_pending",
+        bike_id: r.bike_id,
+        bike_name: r.bike_name,
+        rental_id: r.id,
+        customer_name: r.customer_name,
+        customer_phone: r.customer_phone,
+        message,
+        is_read: "false",
+        created_at: new Date().toISOString(),
+      });
     }
   }
 }

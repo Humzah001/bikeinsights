@@ -1,5 +1,0 @@
-id,bike_id,bike_name,description,repair_date,cost,repair_shop,status,notes,created_at
-repair-1,bike-4,Urban Glide,Brake pad replacement,2025-02-28,45,CycleFix London,completed, ,2025-02-28T00:00:00Z
-repair-2,bike-2,City Runner B,Flat tire repair,2025-02-15,25,QuickBike Shop,completed, ,2025-02-15T00:00:00Z
-repair-3,bike-4,Urban Glide,Battery diagnostic,2025-03-01,60,Bosch Service Centre,in_progress,Waiting for parts,2025-03-01T00:00:00Z
-repair-4,bike-1,Electric Cruiser A,Chain replacement,2025-01-20,35,CycleFix London,completed, ,2025-01-20T00:00:00Z
