@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV, writeCSV } from "@/lib/csv";
+import { readCSV, writeCSV, CSVWriteError } from "@/lib/csv";
 import type { Bike } from "@/lib/types";
 
 export async function GET(
@@ -37,8 +37,15 @@ export async function PATCH(
   if (body.notes != null) b.notes = body.notes;
   if (body.last_latitude != null) b.last_latitude = body.last_latitude;
   if (body.last_longitude != null) b.last_longitude = body.last_longitude;
-  await writeCSV("bikes.csv", bikes);
-  return NextResponse.json(b);
+  try {
+    await writeCSV("bikes.csv", bikes);
+    return NextResponse.json(b);
+  } catch (e) {
+    if (e instanceof CSVWriteError) {
+      return NextResponse.json({ error: e.message }, { status: 503 });
+    }
+    throw e;
+  }
 }
 
 export async function DELETE(
@@ -51,6 +58,13 @@ export async function DELETE(
   if (filtered.length === bikes.length) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  await writeCSV("bikes.csv", filtered);
-  return NextResponse.json({ ok: true });
+  try {
+    await writeCSV("bikes.csv", filtered);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    if (e instanceof CSVWriteError) {
+      return NextResponse.json({ error: e.message }, { status: 503 });
+    }
+    throw e;
+  }
 }

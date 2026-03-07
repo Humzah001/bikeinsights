@@ -1,5 +1,5 @@
 import { addDays, isBefore, parseISO, format } from "date-fns";
-import { readCSV, appendCSV, writeCSV } from "@/lib/csv";
+import { readCSV, appendCSV, writeCSV, CSVWriteError } from "@/lib/csv";
 import type { Notification, Rental } from "@/lib/types";
 import { getWeeksWithPendingRent, getRentDueTuesdayForWeek } from "@/lib/calculations";
 import { v4 as uuidv4 } from "uuid";
@@ -25,24 +25,34 @@ export async function ensureOverdueRentalsUpdated(): Promise<void> {
         (n) => n.type === "rent_overdue" && n.rental_id === r.id
       );
       if (!exists) {
-        await appendCSV<Notification>("notifications.csv", {
-          id: `notif-${uuidv4().slice(0, 8)}`,
-          type: "rent_overdue",
-          bike_id: r.bike_id,
-          bike_name: r.bike_name,
-          rental_id: r.id,
-          customer_name: r.customer_name,
-          customer_phone: r.customer_phone,
-          message: `Rental ${r.id} (${r.bike_name}) is overdue. Customer: ${r.customer_name}`,
-          is_read: "false",
-          created_at: new Date().toISOString(),
-        });
+        try {
+          await appendCSV<Notification>("notifications.csv", {
+            id: `notif-${uuidv4().slice(0, 8)}`,
+            type: "rent_overdue",
+            bike_id: r.bike_id,
+            bike_name: r.bike_name,
+            rental_id: r.id,
+            customer_name: r.customer_name,
+            customer_phone: r.customer_phone,
+            message: `Rental ${r.id} (${r.bike_name}) is overdue. Customer: ${r.customer_name}`,
+            is_read: "false",
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          if (e instanceof CSVWriteError) return;
+          throw e;
+        }
       }
     }
   }
   if (changed) {
-    const { writeCSV: writeRentals } = await import("@/lib/csv");
-    await writeRentals("rentals.csv", rentals);
+    try {
+      const { writeCSV: writeRentals } = await import("@/lib/csv");
+      await writeRentals("rentals.csv", rentals);
+    } catch (e) {
+      if (e instanceof CSVWriteError) return;
+      throw e;
+    }
   }
 }
 
@@ -68,18 +78,23 @@ export async function getOrCreateDueSoonAndPaymentPendingNotifications(): Promis
           parseISO(n.created_at) > addDays(now, -1)
       );
       if (!exists) {
-        await appendCSV<Notification>("notifications.csv", {
-          id: `notif-${uuidv4().slice(0, 8)}`,
-          type: "rent_due_soon",
-          bike_id: r.bike_id,
-          bike_name: r.bike_name,
-          rental_id: r.id,
-          customer_name: r.customer_name,
-          customer_phone: r.customer_phone,
-          message: `Rental ending soon for ${r.bike_name}. Customer: ${r.customer_name}`,
-          is_read: "false",
-          created_at: new Date().toISOString(),
-        });
+        try {
+          await appendCSV<Notification>("notifications.csv", {
+            id: `notif-${uuidv4().slice(0, 8)}`,
+            type: "rent_due_soon",
+            bike_id: r.bike_id,
+            bike_name: r.bike_name,
+            rental_id: r.id,
+            customer_name: r.customer_name,
+            customer_phone: r.customer_phone,
+            message: `Rental ending soon for ${r.bike_name}. Customer: ${r.customer_name}`,
+            is_read: "false",
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          if (e instanceof CSVWriteError) return;
+          throw e;
+        }
       }
     }
 
@@ -88,18 +103,23 @@ export async function getOrCreateDueSoonAndPaymentPendingNotifications(): Promis
         (n) => n.type === "payment_pending" && n.rental_id === r.id
       );
       if (!exists) {
-        await appendCSV<Notification>("notifications.csv", {
-          id: `notif-${uuidv4().slice(0, 8)}`,
-          type: "payment_pending",
-          bike_id: r.bike_id,
-          bike_name: r.bike_name,
-          rental_id: r.id,
-          customer_name: r.customer_name,
-          customer_phone: r.customer_phone,
-          message: `Payment pending for rental ${r.id}. Customer: ${r.customer_name}`,
-          is_read: "false",
-          created_at: new Date().toISOString(),
-        });
+        try {
+          await appendCSV<Notification>("notifications.csv", {
+            id: `notif-${uuidv4().slice(0, 8)}`,
+            type: "payment_pending",
+            bike_id: r.bike_id,
+            bike_name: r.bike_name,
+            rental_id: r.id,
+            customer_name: r.customer_name,
+            customer_phone: r.customer_phone,
+            message: `Payment pending for rental ${r.id}. Customer: ${r.customer_name}`,
+            is_read: "false",
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          if (e instanceof CSVWriteError) return;
+          throw e;
+        }
       }
     }
   }
@@ -137,18 +157,23 @@ export async function ensureWeeklyRentNotifications(): Promise<void> {
       );
       if (alreadyExists) continue;
 
-      await appendCSV<Notification>("notifications.csv", {
-        id: `notif-${uuidv4().slice(0, 8)}`,
-        type: "week_rent_pending",
-        bike_id: r.bike_id,
-        bike_name: r.bike_name,
-        rental_id: r.id,
-        customer_name: r.customer_name,
-        customer_phone: r.customer_phone,
-        message,
-        is_read: "false",
-        created_at: new Date().toISOString(),
-      });
+      try {
+        await appendCSV<Notification>("notifications.csv", {
+          id: `notif-${uuidv4().slice(0, 8)}`,
+          type: "week_rent_pending",
+          bike_id: r.bike_id,
+          bike_name: r.bike_name,
+          rental_id: r.id,
+          customer_name: r.customer_name,
+          customer_phone: r.customer_phone,
+          message,
+          is_read: "false",
+          created_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        if (e instanceof CSVWriteError) return;
+        throw e;
+      }
       existing.push({
         id: "",
         type: "week_rent_pending",
@@ -169,11 +194,21 @@ export async function markNotificationRead(id: string): Promise<void> {
   const notifications = await readCSV<Notification>("notifications.csv");
   const n = notifications.find((x) => x.id === id);
   if (n) n.is_read = "true";
-  await writeCSV("notifications.csv", notifications);
+  try {
+    await writeCSV("notifications.csv", notifications);
+  } catch (e) {
+    if (e instanceof CSVWriteError) return;
+    throw e;
+  }
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
   const notifications = await readCSV<Notification>("notifications.csv");
   for (const n of notifications) n.is_read = "true";
-  await writeCSV("notifications.csv", notifications);
+  try {
+    await writeCSV("notifications.csv", notifications);
+  } catch (e) {
+    if (e instanceof CSVWriteError) return;
+    throw e;
+  }
 }

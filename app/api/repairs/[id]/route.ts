@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV, writeCSV } from "@/lib/csv";
+import { readCSV, writeCSV, CSVWriteError } from "@/lib/csv";
 import type { Repair, Bike } from "@/lib/types";
 
 export async function GET(
@@ -58,8 +58,15 @@ export async function PATCH(
     }
   }
 
-  await writeCSV("repairs.csv", repairs);
-  return NextResponse.json(r);
+  try {
+    await writeCSV("repairs.csv", repairs);
+    return NextResponse.json(r);
+  } catch (e) {
+    if (e instanceof CSVWriteError) {
+      return NextResponse.json({ error: e.message }, { status: 503 });
+    }
+    throw e;
+  }
 }
 
 export async function DELETE(
@@ -72,7 +79,14 @@ export async function DELETE(
   if (!repair) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const filtered = repairs.filter((r) => r.id !== id);
-  await writeCSV("repairs.csv", filtered);
+  try {
+    await writeCSV("repairs.csv", filtered);
+  } catch (e) {
+    if (e instanceof CSVWriteError) {
+      return NextResponse.json({ error: e.message }, { status: 503 });
+    }
+    throw e;
+  }
 
   // If bike was under_repair and no other pending/in_progress repairs for this bike, set available
   if (repair.status === "pending" || repair.status === "in_progress") {
@@ -84,7 +98,14 @@ export async function DELETE(
       const bike = bikes.find((b) => b.id === repair.bike_id);
       if (bike && bike.status === "under_repair") {
         bike.status = "available";
-        await writeCSV("bikes.csv", bikes);
+        try {
+          await writeCSV("bikes.csv", bikes);
+        } catch (e2) {
+          if (e2 instanceof CSVWriteError) {
+            return NextResponse.json({ error: e2.message }, { status: 503 });
+          }
+          throw e2;
+        }
       }
     }
   }

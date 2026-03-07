@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV, writeCSV } from "@/lib/csv";
+import { readCSV, writeCSV, CSVWriteError } from "@/lib/csv";
 import type { Rental, Bike, Notification } from "@/lib/types";
 import { calculateWeeks, calculateTotalAmount } from "@/lib/calculations";
 
@@ -18,6 +18,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try {
   const { id } = await params;
   const rentals = await readCSV<Rental>("rentals.csv");
   const index = rentals.findIndex((r) => r.id === id);
@@ -83,6 +84,15 @@ export async function PATCH(
 
   await writeCSV("rentals.csv", rentals);
   return NextResponse.json(r);
+  } catch (err) {
+  if (err instanceof CSVWriteError) {
+    return NextResponse.json(
+      { error: err.message },
+      { status: 503 }
+    );
+  }
+  throw err;
+  }
 }
 
 export async function DELETE(
@@ -95,7 +105,14 @@ export async function DELETE(
   if (!rental) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const filtered = rentals.filter((r) => r.id !== id);
-  await writeCSV("rentals.csv", filtered);
+  try {
+    await writeCSV("rentals.csv", filtered);
+  } catch (e) {
+    if (e instanceof CSVWriteError) {
+      return NextResponse.json({ error: e.message }, { status: 503 });
+    }
+    throw e;
+  }
 
   // If rental was active/overdue, set bike back to available
   if (rental.status === "active" || rental.status === "overdue") {
@@ -103,7 +120,14 @@ export async function DELETE(
     const bike = bikes.find((b) => b.id === rental.bike_id);
     if (bike) {
       bike.status = "available";
-      await writeCSV("bikes.csv", bikes);
+      try {
+        await writeCSV("bikes.csv", bikes);
+      } catch (e2) {
+        if (e2 instanceof CSVWriteError) {
+          return NextResponse.json({ error: e2.message }, { status: 503 });
+        }
+        throw e2;
+      }
     }
   }
 

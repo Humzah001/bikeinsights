@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV, appendCSV, writeCSV } from "@/lib/csv";
+import { readCSV, appendCSV, writeCSV, CSVWriteError } from "@/lib/csv";
 import type { Repair, Bike } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 
@@ -37,6 +37,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(row);
   } catch (e) {
+    if (e instanceof CSVWriteError) {
+      return NextResponse.json({ error: e.message }, { status: 503 });
+    }
     console.error(e);
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
