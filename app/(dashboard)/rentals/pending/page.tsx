@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { ensureOverdueRentalsUpdated, ensureWeeklyRentNotifications } from "@/lib/notifications";
-import { readCSV } from "@/lib/csv";
+import * as db from "@/lib/db";
 import type { Rental } from "@/lib/types";
 import { PendingClient } from "./PendingClient";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function PendingRentalsPage() {
   await ensureOverdueRentalsUpdated();
   await ensureWeeklyRentNotifications();
-  const rentals = await readCSV<Rental>("rentals.csv");
+  const rentals = await db.getRentals();
 
   const overdue = rentals.filter((r) => r.status === "overdue");
   const pendingPayment = rentals.filter(

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV } from "@/lib/csv";
+import * as db from "@/lib/db";
 import type { Bike } from "@/lib/types";
 import { sendTrackerLocationsEmail } from "@/lib/email";
 
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const bikes = await readCSV<Bike>("bikes.csv");
+    const bikes = await db.getBikes();
     const bikeLinks = bikes
       .filter((b) => b.tracker_share_url)
       .map((b) => ({ name: b.name, url: b.tracker_share_url }));

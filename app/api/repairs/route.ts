@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV, appendCSV, writeCSV, CSVWriteError } from "@/lib/csv";
-import type { Repair, Bike } from "@/lib/types";
+import * as db from "@/lib/db";
+import type { Repair } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 
 export async function GET() {
-  const data = await readCSV<Repair>("repairs.csv");
+  const data = await db.getRepairs();
   return NextResponse.json(data);
 }
 
@@ -24,22 +24,15 @@ export async function POST(request: NextRequest) {
       notes: body.notes ?? "",
       created_at: new Date().toISOString(),
     };
-    await appendCSV("repairs.csv", row);
+    const created = await db.createRepair(row);
 
     if (row.status === "pending" || row.status === "in_progress") {
-      const bikes = await readCSV<Bike>("bikes.csv");
-      const bike = bikes.find((b) => b.id === row.bike_id);
-      if (bike) {
-        bike.status = "under_repair";
-        await writeCSV("bikes.csv", bikes);
-      }
+      const bike = await db.getBikeById(row.bike_id);
+      if (bike) await db.updateBike(row.bike_id, { status: "under_repair" });
     }
 
-    return NextResponse.json(row);
+    return NextResponse.json(created);
   } catch (e) {
-    if (e instanceof CSVWriteError) {
-      return NextResponse.json({ error: e.message }, { status: 503 });
-    }
     console.error(e);
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

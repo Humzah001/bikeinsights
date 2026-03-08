@@ -1,3 +1,3 @@
 id,name,brand,model,color,serial_number,status,purchase_date,purchase_price,weekly_rate,tracker_share_url,image_filename,notes,created_at,last_latitude,last_longitude
-bike-1f379077,1001,Black,dual bettery,Black,,available,2025-12-01,700,50,,,,2026-03-06T22:15:11.366Z,,
+bike-1f379077,1001,Black,dual bettery,Black,,under_repair,2025-12-01,700,50,,,,2026-03-06T22:15:11.366Z,,
 bike-dfffef19,1002,Duotts,c29,blue & black,,rented,2026-02-01,1000,60,,,,2026-03-06T22:15:49.181Z,,

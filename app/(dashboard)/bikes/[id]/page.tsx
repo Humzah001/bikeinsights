@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { readCSV } from "@/lib/csv";
+import * as db from "@/lib/db";
 import { BikeStatusBadge } from "@/components/bikes/BikeStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,10 +26,10 @@ export default async function BikeDetailPage({
 }) {
   const { id } = await params;
   const [bikes, rentals, repairs, expenses] = await Promise.all([
-    readCSV<Bike>("bikes.csv"),
-    readCSV<Rental>("rentals.csv"),
-    readCSV<Repair>("repairs.csv"),
-    readCSV<Expense>("expenses.csv"),
+    db.getBikes(),
+    db.getRentals(),
+    db.getRepairs(),
+    db.getExpenses(),
   ]);
 
   const bike = bikes.find((b) => b.id === id);

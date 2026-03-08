@@ -1,4 +1,4 @@
-import { readCSV } from "@/lib/csv";
+import * as db from "@/lib/db";
 import type { Rental, Repair, Expense, Bike } from "@/lib/types";
 import { format, parseISO, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { AnalyticsClient } from "./AnalyticsClient";
@@ -7,10 +7,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage() {
   const [rentals, repairs, expenses, bikes] = await Promise.all([
-    readCSV<Rental>("rentals.csv"),
-    readCSV<Repair>("repairs.csv"),
-    readCSV<Expense>("expenses.csv"),
-    readCSV<Bike>("bikes.csv"),
+    db.getRentals(),
+    db.getRepairs(),
+    db.getExpenses(),
+    db.getBikes(),
   ]);
 
   const now = new Date();

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV, appendCSV, writeCSV, CSVWriteError } from "@/lib/csv";
-import type { Rental, Bike, Notification } from "@/lib/types";
+import * as db from "@/lib/db";
+import type { Rental, Notification } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 import { calculateWeeks, calculateTotalAmount } from "@/lib/calculations";
 
 export async function GET() {
-  const data = await readCSV<Rental>("rentals.csv");
+  const data = await db.getRentals();
   return NextResponse.json(data);
 }
 
@@ -37,17 +37,15 @@ export async function POST(request: NextRequest) {
       notes: body.notes ?? "",
       created_at: new Date().toISOString(),
     };
-    await appendCSV("rentals.csv", row);
+    const created = await db.createRental(row);
 
-    const bikes = await readCSV<Bike>("bikes.csv");
-    const bike = bikes.find((b) => b.id === row.bike_id);
+    const bike = await db.getBikeById(row.bike_id);
     if (bike) {
-      bike.status = "rented";
-      await writeCSV("bikes.csv", bikes);
+      await db.updateBike(row.bike_id, { status: "rented" });
     }
 
     if (row.payment_status === "pending") {
-      await appendCSV<Notification>("notifications.csv", {
+      await db.createNotification({
         id: `notif-${uuidv4().slice(0, 8)}`,
         type: "payment_pending",
         bike_id: row.bike_id,
@@ -61,11 +59,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(row);
+    return NextResponse.json(created);
   } catch (e) {
-    if (e instanceof CSVWriteError) {
-      return NextResponse.json({ error: e.message }, { status: 503 });
-    }
     console.error(e);
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV } from "@/lib/csv";
+import * as db from "@/lib/db";
 import type { Rental } from "@/lib/types";
 import { sendReminderEmail } from "@/lib/email";
 
@@ -9,8 +9,7 @@ export async function POST(request: NextRequest) {
     if (!rental_id) {
       return NextResponse.json({ error: "rental_id required" }, { status: 400 });
     }
-    const rentals = await readCSV<Rental>("rentals.csv");
-    const rental = rentals.find((r) => r.id === rental_id);
+    const rental = await db.getRentalById(rental_id);
     if (!rental) {
       return NextResponse.json({ error: "Rental not found" }, { status: 404 });
     }

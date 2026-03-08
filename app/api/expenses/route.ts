@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV, appendCSV, CSVWriteError } from "@/lib/csv";
+import * as db from "@/lib/db";
 import type { Expense } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 
 export async function GET() {
-  const data = await readCSV<Expense>("expenses.csv");
+  const data = await db.getExpenses();
   return NextResponse.json(data);
 }
 
@@ -24,12 +24,9 @@ export async function POST(request: NextRequest) {
       notes: body.notes ?? "",
       created_at: new Date().toISOString(),
     };
-    await appendCSV("expenses.csv", row);
-    return NextResponse.json(row);
+    const created = await db.createExpense(row);
+    return NextResponse.json(created);
   } catch (e) {
-    if (e instanceof CSVWriteError) {
-      return NextResponse.json({ error: e.message }, { status: 503 });
-    }
     console.error(e);
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

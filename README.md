@@ -16,6 +16,18 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### Environment variables
+
+Create a `.env.local` file (and set the same in Vercel for production):
+
+- **Supabase (required for data):**  
+  `NEXT_PUBLIC_SUPABASE_URL` – your Supabase project URL  
+  `SUPABASE_SERVICE_ROLE_KEY` – service role key (Project → Settings → API)  
+  Run the table script in `supabase/migrations/001_initial_tables.sql` in the Supabase SQL Editor before using the app.
+- **Admin portal:**  
+  `ADMIN_PASSWORD` – password for the dashboard login.
+- **Optional:** `NOTIFICATION_FROM_EMAIL` for tracker/reminder emails.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

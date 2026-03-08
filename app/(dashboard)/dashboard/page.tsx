@@ -1,4 +1,4 @@
-import { readCSV } from "@/lib/csv";
+import * as db from "@/lib/db";
 import { ensureOverdueRentalsUpdated, ensureWeeklyRentNotifications } from "@/lib/notifications";
 import type { Bike, Rental, Repair, Expense, Notification } from "@/lib/types";
 import { format, parseISO, startOfMonth, endOfMonth, subMonths, subWeeks } from "date-fns";
@@ -11,11 +11,11 @@ export default async function DashboardPage() {
   await ensureOverdueRentalsUpdated();
   await ensureWeeklyRentNotifications();
   const [bikes, rentals, repairs, expenses, notifications] = await Promise.all([
-    readCSV<Bike>("bikes.csv"),
-    readCSV<Rental>("rentals.csv"),
-    readCSV<Repair>("repairs.csv"),
-    readCSV<Expense>("expenses.csv"),
-    readCSV<Notification>("notifications.csv"),
+    db.getBikes(),
+    db.getRentals(),
+    db.getRepairs(),
+    db.getExpenses(),
+    db.getNotifications(),
   ]);
 
   const now = new Date();

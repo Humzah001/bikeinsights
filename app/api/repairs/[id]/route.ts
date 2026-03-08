@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV, writeCSV, CSVWriteError } from "@/lib/csv";
-import type { Repair, Bike } from "@/lib/types";
+import * as db from "@/lib/db";
+import type { Repair } from "@/lib/types";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const repairs = await readCSV<Repair>("repairs.csv");
-  const repair = repairs.find((r) => r.id === id);
+  const repair = await db.getRepairById(id);
   if (!repair) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(repair);
 }
@@ -18,55 +17,39 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const repairs = await readCSV<Repair>("repairs.csv");
-  const index = repairs.findIndex((r) => r.id === id);
-  if (index === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const repair = await db.getRepairById(id);
+  if (!repair) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await request.json();
-  const r = repairs[index];
-  const prevStatus = r.status;
+  const prevStatus = repair.status;
+  const updates: Partial<Repair> = {};
+  if (body.description != null) updates.description = body.description;
+  if (body.repair_date != null) updates.repair_date = body.repair_date;
+  if (body.cost != null) updates.cost = String(body.cost);
+  if (body.repair_shop != null) updates.repair_shop = body.repair_shop;
+  if (body.status != null) updates.status = body.status;
+  if (body.notes != null) updates.notes = body.notes;
 
-  if (body.description != null) r.description = body.description;
-  if (body.repair_date != null) r.repair_date = body.repair_date;
-  if (body.cost != null) r.cost = String(body.cost);
-  if (body.repair_shop != null) r.repair_shop = body.repair_shop;
-  if (body.status != null) r.status = body.status;
-  if (body.notes != null) r.notes = body.notes;
+  const updated = await db.updateRepair(id, updates);
+  const bike = await db.getBikeById(repair.bike_id);
+  const repairs = await db.getRepairs();
+  const otherPending = repairs.filter(
+    (x) => x.bike_id === repair.bike_id && x.id !== id && (x.status === "pending" || x.status === "in_progress")
+  );
 
-  const bikes = await readCSV<Bike>("bikes.csv");
-  const bike = bikes.find((b) => b.id === r.bike_id);
-
-  if (r.status === "completed" && (prevStatus === "pending" || prevStatus === "in_progress")) {
-    if (bike && bike.status === "under_repair") {
-      const otherPending = repairs.filter(
-        (x) => x.bike_id === r.bike_id && x.id !== id && (x.status === "pending" || x.status === "in_progress")
-      );
-      if (otherPending.length === 0) {
-        bike.status = "available";
-        await writeCSV("bikes.csv", bikes);
-      }
+  if (updated.status === "completed" && (prevStatus === "pending" || prevStatus === "in_progress")) {
+    if (bike && bike.status === "under_repair" && otherPending.length === 0) {
+      await db.updateBike(repair.bike_id, { status: "available" });
     }
-  } else if ((r.status === "pending" || r.status === "in_progress") && prevStatus === "completed") {
-    if (bike) {
-      bike.status = "under_repair";
-      await writeCSV("bikes.csv", bikes);
-    }
-  } else if (r.status === "pending" || r.status === "in_progress") {
+  } else if ((updated.status === "pending" || updated.status === "in_progress") && prevStatus === "completed") {
+    if (bike) await db.updateBike(repair.bike_id, { status: "under_repair" });
+  } else if (updated.status === "pending" || updated.status === "in_progress") {
     if (bike && bike.status !== "under_repair") {
-      bike.status = "under_repair";
-      await writeCSV("bikes.csv", bikes);
+      await db.updateBike(repair.bike_id, { status: "under_repair" });
     }
   }
 
-  try {
-    await writeCSV("repairs.csv", repairs);
-    return NextResponse.json(r);
-  } catch (e) {
-    if (e instanceof CSVWriteError) {
-      return NextResponse.json({ error: e.message }, { status: 503 });
-    }
-    throw e;
-  }
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(
@@ -74,38 +57,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const repairs = await readCSV<Repair>("repairs.csv");
-  const repair = repairs.find((r) => r.id === id);
+  const repair = await db.getRepairById(id);
   if (!repair) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const filtered = repairs.filter((r) => r.id !== id);
-  try {
-    await writeCSV("repairs.csv", filtered);
-  } catch (e) {
-    if (e instanceof CSVWriteError) {
-      return NextResponse.json({ error: e.message }, { status: 503 });
-    }
-    throw e;
-  }
+  await db.deleteRepair(id);
 
-  // If bike was under_repair and no other pending/in_progress repairs for this bike, set available
   if (repair.status === "pending" || repair.status === "in_progress") {
-    const otherForBike = filtered.filter(
+    const repairs = await db.getRepairs();
+    const otherForBike = repairs.filter(
       (r) => r.bike_id === repair.bike_id && (r.status === "pending" || r.status === "in_progress")
     );
     if (otherForBike.length === 0) {
-      const bikes = await readCSV<Bike>("bikes.csv");
-      const bike = bikes.find((b) => b.id === repair.bike_id);
+      const bike = await db.getBikeById(repair.bike_id);
       if (bike && bike.status === "under_repair") {
-        bike.status = "available";
-        try {
-          await writeCSV("bikes.csv", bikes);
-        } catch (e2) {
-          if (e2 instanceof CSVWriteError) {
-            return NextResponse.json({ error: e2.message }, { status: 503 });
-          }
-          throw e2;
-        }
+        await db.updateBike(repair.bike_id, { status: "available" });
       }
     }
   }

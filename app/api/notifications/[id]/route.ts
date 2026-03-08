@@ -1,25 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV, writeCSV, CSVWriteError } from "@/lib/csv";
-import type { Notification } from "@/lib/types";
+import * as db from "@/lib/db";
 
 export async function PATCH(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const notifications = await readCSV<Notification>("notifications.csv");
+  const notifications = await db.getNotifications();
   const n = notifications.find((x) => x.id === id);
   if (!n) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  n.is_read = "true";
-  try {
-    await writeCSV("notifications.csv", notifications);
-    return NextResponse.json(n);
-  } catch (e) {
-    if (e instanceof CSVWriteError) {
-      return NextResponse.json({ error: e.message }, { status: 503 });
-    }
-    throw e;
-  }
+  const updated = await db.updateNotification(id, { is_read: "true" });
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(
@@ -27,17 +18,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const notifications = await readCSV<Notification>("notifications.csv");
-  const filtered = notifications.filter((n) => n.id !== id);
-  if (filtered.length === notifications.length)
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  try {
-    await writeCSV("notifications.csv", filtered);
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    if (e instanceof CSVWriteError) {
-      return NextResponse.json({ error: e.message }, { status: 503 });
-    }
-    throw e;
-  }
+  const n = (await db.getNotifications()).find((x) => x.id === id);
+  if (!n) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  await db.deleteNotification(id);
+  return NextResponse.json({ ok: true });
 }

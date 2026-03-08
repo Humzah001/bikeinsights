@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { readCSV } from "@/lib/csv";
-import type { Notification } from "@/lib/types";
+import * as db from "@/lib/db";
 
 export async function GET() {
-  const data = await readCSV<Notification>("notifications.csv");
+  const data = await db.getNotifications();
   return NextResponse.json(data);
 }

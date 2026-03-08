@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readCSV, writeCSV, CSVWriteError } from "@/lib/csv";
-import type { Rental, Bike, Notification } from "@/lib/types";
+import * as db from "@/lib/db";
+import type { Rental } from "@/lib/types";
 import { calculateWeeks, calculateTotalAmount } from "@/lib/calculations";
 
 export async function GET(
@@ -8,8 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const rentals = await readCSV<Rental>("rentals.csv");
-  const rental = rentals.find((r) => r.id === id);
+  const rental = await db.getRentalById(id);
   if (!rental) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(rental);
 }
@@ -19,79 +18,59 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-  const { id } = await params;
-  const rentals = await readCSV<Rental>("rentals.csv");
-  const index = rentals.findIndex((r) => r.id === id);
-  if (index === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const { id } = await params;
+    const rental = await db.getRentalById(id);
+    if (!rental) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const body = await request.json();
-  const r = rentals[index];
+    const body = await request.json();
+    const updates: Partial<Rental> = { ...rental };
 
-  if (body.start_date != null) r.start_date = body.start_date;
-  if (body.end_date != null) r.end_date = body.end_date;
-  if (body.weekly_rate != null) r.weekly_rate = String(body.weekly_rate);
-  if (body.customer_name != null) r.customer_name = body.customer_name;
-  if (body.customer_phone != null) r.customer_phone = body.customer_phone;
-  if (body.customer_email != null) r.customer_email = body.customer_email;
-  if (body.payment_status != null) r.payment_status = body.payment_status;
-  if (body.status != null) r.status = body.status;
-  if (body.notes != null) r.notes = body.notes;
+    if (body.start_date != null) updates.start_date = body.start_date;
+    if (body.end_date != null) updates.end_date = body.end_date;
+    if (body.weekly_rate != null) updates.weekly_rate = String(body.weekly_rate);
+    if (body.customer_name != null) updates.customer_name = body.customer_name;
+    if (body.customer_phone != null) updates.customer_phone = body.customer_phone;
+    if (body.customer_email != null) updates.customer_email = body.customer_email;
+    if (body.payment_status != null) updates.payment_status = body.payment_status;
+    if (body.status != null) updates.status = body.status;
+    if (body.notes != null) updates.notes = body.notes;
 
-  const weeks = calculateWeeks(r.start_date, r.end_date);
-  const totalAmount = calculateTotalAmount(
-    r.start_date,
-    r.end_date,
-    Number(r.weekly_rate)
-  );
-  r.weeks = String(weeks);
-  r.total_amount = String(totalAmount);
-
-  // Weekly payment: record one week's payment
-  if (body.record_weekly_payment === true) {
-    const paid = Number(r.amount_paid || 0);
-    const rate = Number(r.weekly_rate) || 0;
-    r.amount_paid = String(paid + rate);
-    if (Number(r.amount_paid) >= Number(r.total_amount)) {
-      r.payment_status = "paid";
-      const notifications = await readCSV<Notification>("notifications.csv");
-      for (const n of notifications) {
-        if (n.rental_id === id) n.is_read = "true";
-      }
-      await writeCSV("notifications.csv", notifications);
-    } else {
-      r.payment_status = "partial";
-    }
-  }
-
-  if (body.amount_paid != null) r.amount_paid = String(body.amount_paid);
-  if (body.payment_status === "paid") {
-    r.amount_paid = r.total_amount;
-    const notifications = await readCSV<Notification>("notifications.csv");
-    for (const n of notifications) {
-      if (n.rental_id === id) n.is_read = "true";
-    }
-    await writeCSV("notifications.csv", notifications);
-  }
-
-  if (body.status === "completed") {
-    const bikes = await readCSV<Bike>("bikes.csv");
-    const bike = bikes.find((b) => b.id === r.bike_id);
-    if (bike) {
-      bike.status = "available";
-      await writeCSV("bikes.csv", bikes);
-    }
-  }
-
-  await writeCSV("rentals.csv", rentals);
-  return NextResponse.json(r);
-  } catch (err) {
-  if (err instanceof CSVWriteError) {
-    return NextResponse.json(
-      { error: err.message },
-      { status: 503 }
+    const weeks = calculateWeeks(updates.start_date!, updates.end_date!);
+    const totalAmount = calculateTotalAmount(
+      updates.start_date!,
+      updates.end_date!,
+      Number(updates.weekly_rate)
     );
-  }
-  throw err;
+    updates.weeks = String(weeks);
+    updates.total_amount = String(totalAmount);
+
+    if (body.record_weekly_payment === true) {
+      const paid = Number(rental.amount_paid || 0);
+      const rate = Number(rental.weekly_rate) || 0;
+      updates.amount_paid = String(paid + rate);
+      if (Number(updates.amount_paid) >= Number(updates.total_amount)) {
+        updates.payment_status = "paid";
+        await db.updateNotificationsByRentalId(id, { is_read: "true" });
+      } else {
+        updates.payment_status = "partial";
+      }
+    }
+
+    if (body.amount_paid != null) updates.amount_paid = String(body.amount_paid);
+    if (body.payment_status === "paid") {
+      updates.amount_paid = updates.total_amount;
+      await db.updateNotificationsByRentalId(id, { is_read: "true" });
+    }
+
+    if (body.status === "completed") {
+      const bike = await db.getBikeById(rental.bike_id);
+      if (bike) await db.updateBike(rental.bike_id, { status: "available" });
+    }
+
+    const updated = await db.updateRental(id, updates);
+    return NextResponse.json(updated);
+  } catch (err) {
+    throw err;
   }
 }
 
@@ -100,35 +79,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const rentals = await readCSV<Rental>("rentals.csv");
-  const rental = rentals.find((r) => r.id === id);
+  const rental = await db.getRentalById(id);
   if (!rental) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const filtered = rentals.filter((r) => r.id !== id);
-  try {
-    await writeCSV("rentals.csv", filtered);
-  } catch (e) {
-    if (e instanceof CSVWriteError) {
-      return NextResponse.json({ error: e.message }, { status: 503 });
-    }
-    throw e;
-  }
+  await db.deleteRental(id);
 
-  // If rental was active/overdue, set bike back to available
   if (rental.status === "active" || rental.status === "overdue") {
-    const bikes = await readCSV<Bike>("bikes.csv");
-    const bike = bikes.find((b) => b.id === rental.bike_id);
-    if (bike) {
-      bike.status = "available";
-      try {
-        await writeCSV("bikes.csv", bikes);
-      } catch (e2) {
-        if (e2 instanceof CSVWriteError) {
-          return NextResponse.json({ error: e2.message }, { status: 503 });
-        }
-        throw e2;
-      }
-    }
+    const bike = await db.getBikeById(rental.bike_id);
+    if (bike) await db.updateBike(rental.bike_id, { status: "available" });
   }
 
   return NextResponse.json({ ok: true });
