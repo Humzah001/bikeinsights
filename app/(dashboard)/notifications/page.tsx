@@ -89,7 +89,7 @@ export default function NotificationsPage() {
             {unread.map((n) => (
               <div
                 key={n.id}
-                className="flex items-start justify-between gap-4 rounded-lg border bg-background p-3"
+                className="flex flex-col gap-3 rounded-lg border bg-background p-3 sm:flex-row sm:items-start sm:justify-between"
               >
                 <div className="flex gap-3">
                   {typeIcon[n.type] || <Bell className="h-4 w-4 text-muted-foreground" />}
@@ -140,7 +140,7 @@ export default function NotificationsPage() {
             [...unread, ...read].map((n) => (
               <div
                 key={n.id}
-                className={`flex items-start justify-between gap-4 rounded-lg border p-3 ${
+                className={`flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-start sm:justify-between ${
                   n.is_read !== "true" ? "bg-muted/30" : ""
                 }`}
               >

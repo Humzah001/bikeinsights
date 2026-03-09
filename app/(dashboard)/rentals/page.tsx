@@ -145,15 +145,15 @@ export default function RentalsPage() {
         <p className="mb-3 text-sm text-muted-foreground">
           Active: {activeCount} · Collected rent this month: £{thisMonthRevenue.toFixed(2)}
         </p>
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
           <Input
             placeholder="Search customer or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="max-w-xs"
+            className="w-full min-w-0 max-w-xs"
           />
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-full min-w-0 sm:w-[140px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -164,7 +164,7 @@ export default function RentalsPage() {
             </SelectContent>
           </Select>
           <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v ?? "all")}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-full min-w-0 sm:w-[140px]">
               <SelectValue placeholder="Payment" />
             </SelectTrigger>
             <SelectContent>
@@ -181,8 +181,8 @@ export default function RentalsPage() {
         </div>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
+      <div className="overflow-x-auto rounded-md border">
+        <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow>
               <TableHead>Bike</TableHead>
@@ -244,7 +244,7 @@ export default function RentalsPage() {
                     <PaymentStatusBadge status={r.payment_status} />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-1">
                       <Button variant="ghost" size="sm" asChild>
                         <Link href={`/rentals/${r.id}`}>View</Link>
                       </Button>

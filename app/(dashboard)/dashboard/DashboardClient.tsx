@@ -376,8 +376,8 @@ export function DashboardClient({
               <Link href="/rentals">View all</Link>
             </Button>
           </CardHeader>
-          <CardContent>
-            <Table>
+          <CardContent className="overflow-x-auto">
+            <Table className="min-w-[500px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Bike</TableHead>
@@ -421,8 +421,8 @@ export function DashboardClient({
               <Link href="/rentals/pending">View all</Link>
             </Button>
           </CardHeader>
-          <CardContent>
-            <Table>
+          <CardContent className="overflow-x-auto">
+            <Table className="min-w-[400px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Bike</TableHead>
@@ -464,8 +464,8 @@ export function DashboardClient({
               <Link href="/repairs">View all</Link>
             </Button>
           </CardHeader>
-          <CardContent>
-            <Table>
+          <CardContent className="overflow-x-auto">
+            <Table className="min-w-[400px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Bike</TableHead>

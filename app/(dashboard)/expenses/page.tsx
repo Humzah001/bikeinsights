@@ -108,7 +108,7 @@ export default function ExpensesPage() {
 
       <div className="flex flex-wrap gap-4">
         <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v ?? "all")}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full min-w-0 sm:w-[140px]">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -121,7 +121,7 @@ export default function ExpensesPage() {
           </SelectContent>
         </Select>
         <Select value={bikeFilter} onValueChange={(v) => setBikeFilter(v ?? "all")}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full min-w-0 sm:w-[180px]">
             <SelectValue placeholder="Bike" />
           </SelectTrigger>
           <SelectContent>
@@ -136,8 +136,8 @@ export default function ExpensesPage() {
         </Select>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
+      <div className="overflow-x-auto rounded-md border">
+        <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow>
               <TableHead>Bike</TableHead>

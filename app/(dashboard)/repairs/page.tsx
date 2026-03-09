@@ -100,7 +100,7 @@ export default function RepairsPage() {
 
       <div className="flex flex-wrap gap-4">
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full min-w-0 sm:w-[140px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -111,7 +111,7 @@ export default function RepairsPage() {
           </SelectContent>
         </Select>
         <Select value={bikeFilter} onValueChange={(v) => setBikeFilter(v ?? "all")}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full min-w-0 sm:w-[180px]">
             <SelectValue placeholder="Bike" />
           </SelectTrigger>
           <SelectContent>
@@ -125,8 +125,8 @@ export default function RepairsPage() {
         </Select>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
+      <div className="overflow-x-auto rounded-md border">
+        <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow>
               <TableHead>Bike</TableHead>
@@ -154,7 +154,7 @@ export default function RepairsPage() {
                   <Badge className={cn(statusClass[r.status])}>{r.status.replace("_", " ")}</Badge>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-1">
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/repairs/${r.id}/edit`}>Edit</Link>
                     </Button>

@@ -62,7 +62,7 @@ export default async function BikeDetailPage({
           <h1 className="text-2xl font-bold">{bike.name}</h1>
           <BikeStatusBadge status={bike.status} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" asChild>
             <Link href={`/bikes/${id}/edit`}>
               <Pencil className="mr-2 h-4 w-4" />
@@ -198,8 +198,8 @@ export default async function BikeDetailPage({
         <CardHeader>
           <CardTitle>Rental history</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[400px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Customer</TableHead>
@@ -242,8 +242,8 @@ export default async function BikeDetailPage({
         <CardHeader>
           <CardTitle>Repair history</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[400px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
@@ -282,8 +282,8 @@ export default async function BikeDetailPage({
         <CardHeader>
           <CardTitle>Expense history</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[360px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>

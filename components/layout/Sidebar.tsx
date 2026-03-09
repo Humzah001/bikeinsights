@@ -15,11 +15,11 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
-  FileText,
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "./DashboardShell";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -37,17 +37,20 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { sidebarOpen, setSidebarOpen } = useSidebar();
 
   return (
     <aside
       className={cn(
         "flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200",
-        collapsed ? "w-[52px]" : "w-56"
+        "fixed inset-y-0 left-0 z-40 w-56 lg:relative lg:z-auto",
+        collapsed ? "lg:w-[52px]" : "lg:w-56",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}
     >
       <div className="flex h-14 items-center border-b border-sidebar-border px-3">
         {!collapsed && (
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+          <Link href="/dashboard" className="flex items-center gap-2 font-semibold" onClick={() => setSidebarOpen(false)}>
             <Bike className="h-6 w-6 text-primary" />
             <span>BikeInsights</span>
           </Link>
@@ -55,14 +58,14 @@ export function Sidebar() {
         <Button
           variant="ghost"
           size="icon"
-          className="ml-auto"
+          className="ml-auto hidden lg:flex"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
-      <nav className="flex-1 space-y-0.5 p-2">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
@@ -71,6 +74,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setSidebarOpen(false)}
               className={cn(
                 "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                 isActive

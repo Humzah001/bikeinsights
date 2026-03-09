@@ -37,9 +37,9 @@ export function PendingClient({
 }: PendingClientProps) {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Pending payments & overdue rentals</h1>
+      <h1 className="text-xl font-bold sm:text-2xl">Pending payments & overdue rentals</h1>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -89,8 +89,8 @@ export function PendingClient({
             Rentals past end date not yet marked completed. Mark complete or contact customer.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Bike</TableHead>
@@ -99,7 +99,7 @@ export function PendingClient({
                 <TableHead>Days overdue</TableHead>
                 <TableHead>Paid</TableHead>
                 <TableHead>Remaining</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="whitespace-nowrap">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -132,7 +132,7 @@ export function PendingClient({
                     </TableCell>
                     <TableCell>£{getAmountRemaining(Number(r.total_amount), Number(r.amount_paid || 0)).toFixed(0)}</TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button variant="outline" size="sm" asChild>
                           <Link href={`/rentals/${r.id}`}>
                             <CheckCircle className="mr-1 h-3 w-3" />
@@ -165,8 +165,8 @@ export function PendingClient({
             Rentals with payment not fully received. Record weekly payments or send reminder.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Bike</TableHead>
@@ -175,7 +175,7 @@ export function PendingClient({
                 <TableHead>Remaining</TableHead>
                 <TableHead>Rent due</TableHead>
                 <TableHead>End date</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="whitespace-nowrap">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -226,7 +226,7 @@ export function PendingClient({
                       </TableCell>
                       <TableCell>{r.end_date}</TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button variant="outline" size="sm" asChild>
                           <Link href={`/rentals/${r.id}`}>Record weekly payment</Link>
                         </Button>
