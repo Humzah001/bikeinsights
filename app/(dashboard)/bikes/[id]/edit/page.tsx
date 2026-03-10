@@ -31,10 +31,7 @@ const schema = z.object({
   purchase_date: z.string(),
   purchase_price: z.string(),
   weekly_rate: z.string(),
-  tracker_share_url: z.string(),
   notes: z.string(),
-  last_latitude: z.string().optional(),
-  last_longitude: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -71,10 +68,7 @@ export default function EditBikePage() {
         setValue("purchase_date", bike.purchase_date || "");
         setValue("purchase_price", bike.purchase_price || "");
         setValue("weekly_rate", bike.weekly_rate || "");
-        setValue("tracker_share_url", bike.tracker_share_url || "");
         setValue("notes", bike.notes || "");
-        setValue("last_latitude", bike.last_latitude || "");
-        setValue("last_longitude", bike.last_longitude || "");
       })
       .catch(() => toast.error("Failed to load bike"))
       .finally(() => setLoading(false));
@@ -194,20 +188,6 @@ export default function EditBikePage() {
                   step="0.01"
                   {...register("purchase_price")}
                 />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tracker_share_url">Apple AirTag share URL</Label>
-              <Input id="tracker_share_url" {...register("tracker_share_url")} />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="last_latitude">Last known latitude</Label>
-                <Input id="last_latitude" {...register("last_latitude")} placeholder="e.g. 51.5074" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="last_longitude">Last known longitude</Label>
-                <Input id="last_longitude" {...register("last_longitude")} placeholder="e.g. -0.1278" />
               </div>
             </div>
             <div className="space-y-2">

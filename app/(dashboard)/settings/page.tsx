@@ -113,7 +113,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
-          <CardDescription>Email for reminders and tracker links.</CardDescription>
+          <CardDescription>Email for reminders.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import type { Bike, Rental, Repair, Expense } from "@/lib/types";
 import { formatCurrency } from "@/lib/calculations";
-import { Pencil, Plus, Wrench, Wallet, Calendar, MapPin, ExternalLink } from "lucide-react";
+import { Pencil, Plus, Wrench, Wallet, Calendar } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -163,34 +163,6 @@ export default async function BikeDetailPage({
               </p>
             </CardContent>
           </Card>
-
-          {(bike.tracker_share_url || (bike.last_latitude && bike.last_longitude)) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Location</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {bike.tracker_share_url && (
-                  <Button asChild>
-                    <a
-                      href={bike.tracker_share_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <MapPin className="mr-2 h-4 w-4" />
-                      Open AirTag in Maps
-                      <ExternalLink className="ml-2 h-3 w-3" />
-                    </a>
-                  </Button>
-                )}
-                {bike.last_latitude && bike.last_longitude && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Last known: {bike.last_latitude}, {bike.last_longitude}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
 

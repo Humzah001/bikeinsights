@@ -30,7 +30,6 @@ const schema = z.object({
   purchase_date: z.string(),
   purchase_price: z.string(),
   weekly_rate: z.string(),
-  tracker_share_url: z.string(),
   notes: z.string(),
 });
 
@@ -167,14 +166,6 @@ export default function AddBikePage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tracker_share_url">Apple AirTag share URL</Label>
-              <Input
-                id="tracker_share_url"
-                {...register("tracker_share_url")}
-                placeholder="https://www.icloud.com/findmy/..."
-              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>

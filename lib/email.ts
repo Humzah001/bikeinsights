@@ -36,29 +36,3 @@ export async function sendReminderEmail(params: {
   if (error) return { ok: false, error: error.message };
   return { ok: true, data };
 }
-
-export async function sendTrackerLocationsEmail(params: {
-  to: string;
-  bikeLinks: { name: string; url: string }[];
-}) {
-  if (!resend) {
-    console.warn("Resend not configured.");
-    return { ok: false, error: "Email not configured" };
-  }
-  const list = params.bikeLinks
-    .map((b) => `<li><a href="${b.url}">${b.name}</a></li>`)
-    .join("");
-  const { data, error } = await resend.emails.send({
-    from: FROM_EMAIL,
-    to: [params.to],
-    subject: "BikeInsights – Your bike locations",
-    html: `
-      <p>Here are the location links for your bikes:</p>
-      <ul>${list}</ul>
-      <p>Open each link to see the current location on the map.</p>
-      <p>— BikeInsights</p>
-    `,
-  });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, data };
-}

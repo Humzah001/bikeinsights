@@ -30,11 +30,8 @@ export async function PATCH(
   if (body.purchase_date != null) updates.purchase_date = body.purchase_date;
   if (body.purchase_price != null) updates.purchase_price = String(body.purchase_price);
   if (body.weekly_rate != null) updates.weekly_rate = String(body.weekly_rate);
-  if (body.tracker_share_url != null) updates.tracker_share_url = body.tracker_share_url;
   if (body.image_filename != null) updates.image_filename = body.image_filename;
   if (body.notes != null) updates.notes = body.notes;
-  if (body.last_latitude != null) updates.last_latitude = body.last_latitude;
-  if (body.last_longitude != null) updates.last_longitude = body.last_longitude;
   const updated = await db.updateBike(id, updates);
   return NextResponse.json(updated);
 }

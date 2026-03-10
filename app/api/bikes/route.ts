@@ -23,12 +23,9 @@ export async function POST(request: NextRequest) {
       purchase_date: body.purchase_date ?? "",
       purchase_price: String(body.purchase_price ?? 0),
       weekly_rate: String(body.weekly_rate ?? 0),
-      tracker_share_url: body.tracker_share_url ?? "",
       image_filename: body.image_filename ?? "",
       notes: body.notes ?? "",
       created_at: new Date().toISOString(),
-      last_latitude: body.last_latitude,
-      last_longitude: body.last_longitude,
     };
     const created = await db.createBike(row);
     return NextResponse.json(created);

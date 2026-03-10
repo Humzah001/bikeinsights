@@ -167,12 +167,9 @@ function rowToBike(r: Record<string, unknown>): Bike {
     purchase_date: String(r.purchase_date ?? ""),
     purchase_price: String(r.purchase_price ?? "0"),
     weekly_rate: String(r.weekly_rate ?? "0"),
-    tracker_share_url: String(r.tracker_share_url ?? ""),
     image_filename: String(r.image_filename ?? ""),
     notes: String(r.notes ?? ""),
     created_at: r.created_at ? new Date(r.created_at as string).toISOString() : new Date().toISOString(),
-    last_latitude: r.last_latitude != null ? String(r.last_latitude) : undefined,
-    last_longitude: r.last_longitude != null ? String(r.last_longitude) : undefined,
   };
 }
 
@@ -188,11 +185,8 @@ function bikeToRow(b: Partial<Bike>): Record<string, unknown> {
   if (b.purchase_date != null) row.purchase_date = b.purchase_date;
   if (b.purchase_price != null) row.purchase_price = b.purchase_price;
   if (b.weekly_rate != null) row.weekly_rate = b.weekly_rate;
-  if (b.tracker_share_url != null) row.tracker_share_url = b.tracker_share_url;
   if (b.image_filename != null) row.image_filename = b.image_filename;
   if (b.notes != null) row.notes = b.notes;
-  if (b.last_latitude != null) row.last_latitude = b.last_latitude;
-  if (b.last_longitude != null) row.last_longitude = b.last_longitude;
   return row;
 }
 

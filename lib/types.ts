@@ -27,12 +27,9 @@ export interface Bike {
   purchase_date: string;
   purchase_price: string;
   weekly_rate: string;
-  tracker_share_url: string;
   image_filename: string;
   notes: string;
   created_at: string;
-  last_latitude?: string;
-  last_longitude?: string;
 }
 
 export interface Rental {
