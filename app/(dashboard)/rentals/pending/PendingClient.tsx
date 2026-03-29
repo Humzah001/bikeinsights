@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Rental } from "@/lib/types";
-import { getDaysOverdue, getWeeksPaid, getAmountRemaining, getWeeksWithPendingRent, getNextUpcomingRentWeek, getRentDueTuesdayForWeek, formatCurrency } from "@/lib/calculations";
+import { getDaysOverdue, getWeeksPaid, getAmountRemaining, getWeeksWithPendingRent, getNextUpcomingRentWeek, formatCurrency } from "@/lib/calculations";
 import { format } from "date-fns";
 import { Phone, CheckCircle, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -188,19 +188,20 @@ export function PendingClient({
               ) : (
                 pendingPaymentRentals.map((r) => {
                   const today = new Date();
-                  const overdueWeeks = getWeeksWithPendingRent(
-                    { start_date: r.start_date, weeks: r.weeks, weekly_rate: r.weekly_rate, amount_paid: r.amount_paid },
-                    today
-                  );
-                  const upcoming = getNextUpcomingRentWeek(
-                    { start_date: r.start_date, weeks: r.weeks, weekly_rate: r.weekly_rate, amount_paid: r.amount_paid },
-                    today
-                  );
+                  const rentCtx = {
+                    start_date: r.start_date,
+                    weeks: r.weeks,
+                    weekly_rate: r.weekly_rate,
+                    amount_paid: r.amount_paid,
+                    rent_collection_date: r.rent_collection_date,
+                  };
+                  const overdueWeeks = getWeeksWithPendingRent(rentCtx, today);
+                  const upcoming = getNextUpcomingRentWeek(rentCtx, today);
                   const rentDueLabel =
                     overdueWeeks.length > 0
                       ? `Overdue: Week${overdueWeeks.length > 1 ? "s " : " "}${overdueWeeks.join(", ")}`
                       : upcoming
-                        ? `Next: Week ${upcoming.weekNum} (Tue ${format(upcoming.dueDate, "d MMM")})`
+                        ? `Next: Week ${upcoming.weekNum} (${format(upcoming.dueDate, "EEE d MMM")})`
                         : "—";
                   return (
                     <TableRow key={r.id}>

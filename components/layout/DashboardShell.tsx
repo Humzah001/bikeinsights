@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
+import { SessionIdleGuard } from "@/components/auth/SessionIdleGuard";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 
@@ -17,6 +18,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <SidebarContext.Provider value={{ sidebarOpen, setSidebarOpen }}>
+      <SessionIdleGuard />
       <div className="flex min-h-screen">
         <Sidebar />
         {/* Mobile overlay when sidebar is open */}

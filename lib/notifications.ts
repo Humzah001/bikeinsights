@@ -1,7 +1,7 @@
 import { addDays, isBefore, parseISO, format } from "date-fns";
 import * as db from "@/lib/db";
 import type { Notification, Rental } from "@/lib/types";
-import { getWeeksWithPendingRent, getRentDueTuesdayForWeek } from "@/lib/calculations";
+import { getWeeksWithPendingRent, getRentDueDateForWeek } from "@/lib/calculations";
 import { v4 as uuidv4 } from "uuid";
 
 const NOTIFICATION_DAYS_DUE_SOON = 2;
@@ -13,6 +13,7 @@ export async function ensureOverdueRentalsUpdated(): Promise<void> {
   today.setHours(0, 0, 0, 0);
   for (const r of rentals) {
     if (r.status !== "active") continue;
+    if (r.payment_status === "paid") continue;
     const end = parseISO(r.end_date);
     end.setHours(0, 0, 0, 0);
     if (isBefore(end, today)) {
@@ -47,6 +48,7 @@ export async function getOrCreateDueSoonAndPaymentPendingNotifications(): Promis
 
   for (const r of rentals) {
     if (r.status !== "active") continue;
+    if (r.payment_status === "paid") continue;
     const end = parseISO(r.end_date);
     const start = parseISO(r.start_date);
     const daysSinceStart = Math.floor(
@@ -114,14 +116,24 @@ export async function ensureWeeklyRentNotifications(): Promise<void> {
         weeks: r.weeks,
         weekly_rate: r.weekly_rate,
         amount_paid: r.amount_paid,
+        rent_collection_date: r.rent_collection_date,
       },
       today
     );
 
     for (const weekNum of pendingWeeks) {
-      const dueDate = getRentDueTuesdayForWeek(r.start_date, weekNum);
+      const dueDate = getRentDueDateForWeek(
+        {
+          start_date: r.start_date,
+          weeks: r.weeks,
+          weekly_rate: r.weekly_rate,
+          amount_paid: r.amount_paid,
+          rent_collection_date: r.rent_collection_date,
+        },
+        weekNum
+      );
       const dueStr = format(dueDate, "EEE, d MMM yyyy");
-      const message = `Week ${weekNum} rent overdue – ${r.bike_name}, ${r.customer_name}. Was due Tuesday ${dueStr}.`;
+      const message = `Week ${weekNum} rent overdue – ${r.bike_name}, ${r.customer_name}. Was due ${dueStr}.`;
       const alreadyExists = existing.some(
         (n) =>
           n.rental_id === r.id &&

@@ -149,6 +149,11 @@ export async function updateNotificationsByRentalId(rentalId: string, updates: P
   if (error) throw error;
 }
 
+export async function deleteNotificationsByRentalId(rentalId: string): Promise<void> {
+  const { error } = await getSupabase().from("notifications").delete().eq("rental_id", rentalId);
+  if (error) throw error;
+}
+
 export async function deleteNotification(id: string): Promise<void> {
   const { error } = await getSupabase().from("notifications").delete().eq("id", id);
   if (error) throw error;
@@ -206,6 +211,9 @@ function rowToRental(r: Record<string, unknown>): Rental {
     weeks: String(r.weeks ?? "0"),
     status: (r.status as Rental["status"]) ?? "active",
     payment_status: (r.payment_status as Rental["payment_status"]) ?? "pending",
+    deposit_amount: String(r.deposit_amount ?? "0"),
+    deposit_refunded: String(r.deposit_refunded ?? "false"),
+    rent_collection_date: String(r.rent_collection_date ?? ""),
     notes: String(r.notes ?? ""),
     created_at: r.created_at ? new Date(r.created_at as string).toISOString() : new Date().toISOString(),
   };
@@ -227,6 +235,9 @@ function rentalToRow(b: Partial<Rental>): Record<string, unknown> {
   if (b.weeks != null) row.weeks = b.weeks;
   if (b.status != null) row.status = b.status;
   if (b.payment_status != null) row.payment_status = b.payment_status;
+  if (b.deposit_amount != null) row.deposit_amount = b.deposit_amount;
+  if (b.deposit_refunded != null) row.deposit_refunded = b.deposit_refunded;
+  if (b.rent_collection_date != null) row.rent_collection_date = b.rent_collection_date;
   if (b.notes != null) row.notes = b.notes;
   return row;
 }

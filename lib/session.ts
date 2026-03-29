@@ -1,40 +1,26 @@
-import { getIronSession, SessionOptions } from "iron-session";
+import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
+import type { SessionData } from "@/lib/iron-session-config";
+import { ironSessionOptions } from "@/lib/iron-session-config";
 
-export interface SessionData {
-  userId: string;
-  isLoggedIn: boolean;
-}
-
-const defaultSession: SessionData = {
-  userId: "",
-  isLoggedIn: false,
-};
-
-const sessionOptions: SessionOptions = {
-  password: process.env.SESSION_SECRET || "bikeinsights-secret-min-32-chars-long",
-  cookieName: "bikeinsights-session",
-  cookieOptions: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    maxAge: 60 * 60 * 24 * 7, // 1 week
-  },
-};
+export type { SessionData } from "@/lib/iron-session-config";
+export { ironSessionOptions } from "@/lib/iron-session-config";
 
 export async function getSession() {
   const cookieStore = await cookies();
-  return getIronSession<SessionData>(cookieStore, sessionOptions);
+  return getIronSession<SessionData>(cookieStore, ironSessionOptions);
 }
 
 export async function loginSession() {
   const session = await getSession();
   session.userId = "admin";
   session.isLoggedIn = true;
+  session.lastActivity = Date.now();
   await session.save();
 }
 
 export async function logoutSession() {
   const session = await getSession();
   session.destroy();
+  await session.save();
 }

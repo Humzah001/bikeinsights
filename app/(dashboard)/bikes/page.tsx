@@ -32,7 +32,7 @@ export default function BikesPage() {
   }, []);
 
   const activeRentalByBikeId = rentals.reduce<Record<string, string>>((acc, r) => {
-    if (r.status === "active" || r.status === "overdue") acc[r.bike_id] = r.customer_name;
+    if (r.status === "active" || r.status === "overdue" || r.status === "inactive") acc[r.bike_id] = r.customer_name;
     return acc;
   }, {});
 
@@ -50,7 +50,7 @@ export default function BikesPage() {
 
   const totalBikes = bikes.length;
   const earningThisWeek = rentals
-    .filter((r) => r.status === "active" || r.status === "overdue")
+    .filter((r) => r.status === "active" || r.status === "overdue" || r.status === "inactive")
     .reduce((sum, r) => sum + Number(r.weekly_rate), 0);
   const idleBikes = bikes.filter((b) => b.status === "available").length;
 

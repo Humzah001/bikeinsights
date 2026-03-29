@@ -29,6 +29,9 @@ const schema = z.object({
   end_date: z.string().min(1, "End date required"),
   weekly_rate: z.string(),
   payment_status: z.enum(["paid", "pending", "partial"]),
+  deposit_amount: z.string(),
+  deposit_refunded: z.enum(["true", "false"]),
+  rent_collection_date: z.string(),
   notes: z.string(),
 });
 
@@ -77,6 +80,9 @@ export default function EditRentalPage() {
         setValue("end_date", rental.end_date || "");
         setValue("weekly_rate", rental.weekly_rate || "");
         setValue("payment_status", (rental.payment_status as FormData["payment_status"]) || "pending");
+        setValue("deposit_amount", rental.deposit_amount != null ? String(rental.deposit_amount) : "");
+        setValue("deposit_refunded", rental.deposit_refunded === "true" ? "true" : "false");
+        setValue("rent_collection_date", rental.rent_collection_date != null ? String(rental.rent_collection_date) : "");
         setValue("notes", rental.notes || "");
       })
       .catch(() => {
@@ -100,6 +106,9 @@ export default function EditRentalPage() {
           end_date: data.end_date,
           weekly_rate: Number(data.weekly_rate),
           payment_status: data.payment_status,
+          deposit_amount: data.deposit_amount ? Number(data.deposit_amount) : 0,
+          deposit_refunded: data.deposit_refunded === "true",
+          rent_collection_date: data.rent_collection_date || "",
           notes: data.notes,
         }),
       });
@@ -187,6 +196,13 @@ export default function EditRentalPage() {
                 )}
               </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="rent_collection_date">First rent due date</Label>
+              <Input id="rent_collection_date" type="date" {...register("rent_collection_date")} />
+              <p className="text-xs text-muted-foreground">
+                Leave empty to use the first Tuesday on or after the start date. Week 2+ are +7 days from this anchor.
+              </p>
+            </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="weekly_rate">Weekly rate (£)</Label>
@@ -221,6 +237,33 @@ export default function EditRentalPage() {
                   <SelectItem value="partial">Partial</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="deposit_amount">Security deposit (£)</Label>
+                <Input
+                  id="deposit_amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register("deposit_amount")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Deposit refunded</Label>
+                <Select
+                  value={watch("deposit_refunded")}
+                  onValueChange={(v) => setValue("deposit_refunded", v as "true" | "false")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="false">Not yet</SelectItem>
+                    <SelectItem value="true">Refunded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>

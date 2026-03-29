@@ -86,7 +86,7 @@ export default function RentalsPage() {
       return (
         start.getMonth() === now.getMonth() &&
         start.getFullYear() === now.getFullYear() &&
-        (r.status === "active" || r.status === "completed" || r.status === "overdue")
+        (r.status === "active" || r.status === "completed" || r.status === "overdue" || r.status === "inactive")
       );
     })
     .reduce((sum, r) => sum + Number(r.amount_paid || 0), 0);
@@ -106,6 +106,9 @@ export default function RentalsPage() {
       "amount_paid",
       "status",
       "payment_status",
+      "deposit_amount",
+      "deposit_refunded",
+      "rent_collection_date",
     ];
     const rows = filtered.map((r) =>
       headers.map((h) => (r as unknown as Record<string, string>)[h] ?? "").join(",")
@@ -161,6 +164,7 @@ export default function RentalsPage() {
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="overdue">Overdue</SelectItem>
+              <SelectItem value="inactive">Inactive (paid up)</SelectItem>
             </SelectContent>
           </Select>
           <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v ?? "all")}>
@@ -200,14 +204,16 @@ export default function RentalsPage() {
           </TableHeader>
           <TableBody>
             {filtered.map((r) => {
-              const overdue = isOverdue(r.end_date);
+              const endDatePassed = isOverdue(r.end_date);
+              const closedOut = r.status === "completed" || r.status === "inactive";
+              const overdue = endDatePassed && !closedOut;
               const daysOverdue = getDaysOverdue(r.end_date);
               const dueToday =
                 r.status === "active" &&
                 format(parseISO(r.end_date), "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
               const rowClass = cn(
                 overdue && "bg-red-500/5",
-                dueToday && !overdue && "bg-amber-500/5"
+                dueToday && !endDatePassed && "bg-amber-500/5"
               );
               return (
                 <TableRow key={r.id} className={rowClass}>

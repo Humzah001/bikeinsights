@@ -89,6 +89,9 @@ function row(table, raw) {
         weeks: str(raw.weeks) || "0",
         status: str(raw.status) || "active",
         payment_status: str(raw.payment_status) || "pending",
+        deposit_amount: str(raw.deposit_amount) || "0",
+        deposit_refunded: str(raw.deposit_refunded) || "false",
+        rent_collection_date: str(raw.rent_collection_date) || "",
         notes: str(raw.notes),
         created_at: str(raw.created_at) || undefined,
       };

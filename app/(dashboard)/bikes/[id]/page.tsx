@@ -45,7 +45,7 @@ export default async function BikeDetailPage({
   const netProfit = totalRevenue - totalRepairCost - totalExpenseCost;
 
   const currentRental = bikeRentals.find(
-    (r) => r.status === "active" || r.status === "overdue"
+    (r) => r.status === "active" || r.status === "overdue" || r.status === "inactive"
   );
 
   const imageSrc = bike.image_filename

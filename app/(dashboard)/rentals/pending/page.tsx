@@ -11,13 +11,16 @@ export default async function PendingRentalsPage() {
   await ensureWeeklyRentNotifications();
   const rentals = await db.getRentals();
 
-  const overdue = rentals.filter((r) => r.status === "overdue");
+  const overdue = rentals.filter((r) => r.status === "overdue" && r.payment_status !== "paid");
   const pendingPayment = rentals.filter(
-    (r) => (r.payment_status === "pending" || r.payment_status === "partial") && r.status !== "overdue"
+    (r) =>
+      r.status !== "inactive" &&
+      (r.payment_status === "pending" || r.payment_status === "partial") &&
+      r.status !== "overdue"
   );
 
   const totalOutstanding = rentals
-    .filter((r) => r.payment_status !== "paid")
+    .filter((r) => r.payment_status !== "paid" && r.status !== "inactive")
     .reduce(
       (sum, r) => sum + Math.max(0, Number(r.total_amount) - Number(r.amount_paid || 0)),
       0

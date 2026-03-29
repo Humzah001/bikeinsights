@@ -29,7 +29,8 @@ export default function DeleteBikePage() {
     ])
       .then(([b, rentals]) => {
         const active = rentals.some(
-          (r: { bike_id: string; status: string }) => r.bike_id === id && (r.status === "active" || r.status === "overdue")
+          (r: { bike_id: string; status: string }) =>
+            r.bike_id === id && (r.status === "active" || r.status === "overdue" || r.status === "inactive")
         );
         setBike({ name: b.name, hasActiveRental: active });
       })

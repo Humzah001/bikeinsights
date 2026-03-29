@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { calculateWeeks, calculateTotalAmount } from "@/lib/calculations";
+import { calculateWeeks, calculateTotalAmount, getDefaultRentCollectionDate } from "@/lib/calculations";
 import type { Bike } from "@/lib/types";
 
 const schema = z.object({
@@ -31,6 +31,9 @@ const schema = z.object({
   end_date: z.string().min(1, "End date required"),
   weekly_rate: z.string(),
   payment_status: z.enum(["paid", "pending", "partial"]),
+  initial_rent_collected: z.string(),
+  rent_collection_date: z.string(),
+  deposit_amount: z.string(),
   notes: z.string(),
 });
 
@@ -54,6 +57,9 @@ function AddRentalForm() {
     defaultValues: {
       payment_status: "pending",
       weekly_rate: "",
+      initial_rent_collected: "",
+      rent_collection_date: "",
+      deposit_amount: "",
     },
   });
 
@@ -94,6 +100,12 @@ function AddRentalForm() {
     }
   }, [bikeId, bikes, weeklyRate, setValue]);
 
+  useEffect(() => {
+    if (startDate) {
+      setValue("rent_collection_date", getDefaultRentCollectionDate(startDate));
+    }
+  }, [startDate, setValue]);
+
   async function onSubmit(data: FormData) {
     setSubmitting(true);
     try {
@@ -111,6 +123,9 @@ function AddRentalForm() {
           end_date: data.end_date,
           weekly_rate: Number(data.weekly_rate),
           payment_status: data.payment_status,
+          initial_rent_collected: data.initial_rent_collected ? Number(data.initial_rent_collected) : 0,
+          rent_collection_date: data.rent_collection_date || "",
+          deposit_amount: data.deposit_amount ? Number(data.deposit_amount) : 0,
           notes: data.notes,
         }),
       });
@@ -231,6 +246,27 @@ function AddRentalForm() {
               </div>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="rent_collection_date">First rent due date</Label>
+              <Input id="rent_collection_date" type="date" {...register("rent_collection_date")} />
+              <p className="text-xs text-muted-foreground">
+                Week 1 rent is due on this date; week 2 is +7 days, and so on. Defaults to the first Tuesday on or after the start date — change if you collect on another day.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="initial_rent_collected">Rent collected now (£)</Label>
+              <Input
+                id="initial_rent_collected"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0"
+                {...register("initial_rent_collected")}
+              />
+              <p className="text-xs text-muted-foreground">
+                Amount you are receiving at sign-up (counts toward the contract total). Leave 0 if nothing yet.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label>Payment status</Label>
               <Select
                 value={watch("payment_status")}
@@ -245,6 +281,20 @@ function AddRentalForm() {
                   <SelectItem value="partial">Partial</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="deposit_amount">Security deposit (£)</Label>
+              <Input
+                id="deposit_amount"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0 if none"
+                {...register("deposit_amount")}
+              />
+              <p className="text-xs text-muted-foreground">
+                Amount you hold and return when the customer brings the bike back.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>

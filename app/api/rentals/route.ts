@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as db from "@/lib/db";
-import type { Rental, Notification } from "@/lib/types";
+import type { Rental, PaymentStatus, RentalStatus } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 import { calculateWeeks, calculateTotalAmount } from "@/lib/calculations";
 
@@ -17,6 +17,32 @@ export async function POST(request: NextRequest) {
     const weeklyRate = Number(body.weekly_rate) || 0;
     const weeks = calculateWeeks(startDate, endDate);
     const totalAmount = calculateTotalAmount(startDate, endDate, weeklyRate);
+    const paymentStatus = body.payment_status ?? "pending";
+    const depositAmount = String(Number(body.deposit_amount) || 0);
+    const initialRent = Math.max(0, Number(body.initial_rent_collected) || 0);
+    const rentCollectionDate =
+      typeof body.rent_collection_date === "string" ? body.rent_collection_date.trim() : "";
+
+    let amountPaidNum =
+      paymentStatus === "paid" ? totalAmount : Math.min(totalAmount, initialRent);
+
+    let finalPaymentStatus: PaymentStatus;
+    let status: RentalStatus;
+
+    if (totalAmount > 0 && amountPaidNum >= totalAmount) {
+      finalPaymentStatus = "paid";
+      status = "inactive";
+      amountPaidNum = totalAmount;
+    } else if (amountPaidNum > 0) {
+      finalPaymentStatus = "partial";
+      status = (body.status as RentalStatus | undefined) ?? "active";
+    } else if (paymentStatus === "paid") {
+      finalPaymentStatus = "paid";
+      status = "inactive";
+    } else {
+      finalPaymentStatus = paymentStatus === "partial" ? "partial" : "pending";
+      status = (body.status as RentalStatus | undefined) ?? "active";
+    }
 
     const id = body.id || `rent-${uuidv4().slice(0, 8)}`;
     const row: Rental = {
@@ -30,10 +56,13 @@ export async function POST(request: NextRequest) {
       end_date: endDate,
       weekly_rate: String(weeklyRate),
       total_amount: String(totalAmount),
-      amount_paid: "0",
+      amount_paid: String(amountPaidNum),
       weeks: String(weeks),
-      status: body.status ?? "active",
-      payment_status: body.payment_status ?? "pending",
+      status,
+      payment_status: finalPaymentStatus,
+      deposit_amount: depositAmount,
+      deposit_refunded: "false",
+      rent_collection_date: rentCollectionDate,
       notes: body.notes ?? "",
       created_at: new Date().toISOString(),
     };

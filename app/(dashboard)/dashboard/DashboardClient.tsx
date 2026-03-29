@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { KPICard } from "@/components/dashboard/KPICard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -30,7 +31,8 @@ import {
   Legend,
 } from "recharts";
 import { formatCurrency, getWeeksPaid } from "@/lib/calculations";
-import { AlertCircle, AlertTriangle } from "lucide-react";
+import { DashboardMonthSelect } from "@/components/dashboard/DashboardMonthSelect";
+import { AlertCircle, AlertTriangle, Info } from "lucide-react";
 
 const STATUS_COLORS = {
   available: "bg-green-500/20 text-green-600 dark:text-green-400",
@@ -51,6 +53,9 @@ const STATUS_COLORS = {
 const PIE_COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#6b7280", "#ef4444"];
 
 interface DashboardClientProps {
+  monthSelect: { value: string; options: { value: string; label: string }[] };
+  isViewingCurrentMonth: boolean;
+  viewingMonthLabel: string;
   kpis: {
     revenueThisMonth: number;
     activeRentals: number;
@@ -62,8 +67,29 @@ interface DashboardClientProps {
     totalExpensesThisMonth: number;
     netProfitThisMonth: number;
   };
+  kpiCopy: {
+    rentTitle: string;
+    rentSubtitle: string;
+    activeSubtitle?: string;
+    pendingSubtitle?: string;
+    fleetSubtitle?: string;
+    expensesTitle: string;
+    profitTitle: string;
+  };
+  profitSummaries: {
+    week: { revenue: number; expenses: number; profit: number };
+    month: { revenue: number; expenses: number; profit: number };
+    year: { revenue: number; expenses: number; profit: number };
+  };
+  weekRangeLabel: string;
+  monthRangeLabel: string;
   weeklyData: { week: string; revenue: number; expenses: number; profit: number }[];
   monthlyData: { month: string; revenue: number; expenses: number; profit: number }[];
+  yearlyData: { year: string; revenue: number; expenses: number; profit: number }[];
+  yearSummaryLabel: string;
+  weeklyChartFootnote: string;
+  monthlyChartFootnote: string;
+  yearlyChartFootnote: string;
   bikeStatusCounts: { available: number; rented: number; under_repair: number; retired: number };
   revenueByBike: { name: string; revenue: number }[];
   paymentStatusCounts: { paid: number; pending: number; partial: number };
@@ -103,12 +129,67 @@ interface DashboardClientProps {
   overdueCount: number;
   pendingPaymentCount: number;
   pendingRepairCount: number;
+  pieChartTitles: { payment: string; expense: string };
+}
+
+function ProfitSummaryStrip({
+  revenue,
+  expenses,
+  profit,
+  periodLabel,
+}: {
+  revenue: number;
+  expenses: number;
+  profit: number;
+  periodLabel: string;
+}) {
+  return (
+    <div className="rounded-lg border bg-muted/30 p-4">
+      <p className="mb-3 text-xs font-medium text-muted-foreground">{periodLabel}</p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div>
+          <p className="text-xs text-muted-foreground">Collected rent</p>
+          <p className="text-lg font-semibold tabular-nums text-green-600 dark:text-green-400">
+            {formatCurrency(revenue)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Repairs and expenses</p>
+          <p className="text-lg font-semibold tabular-nums text-red-600 dark:text-red-400">
+            {formatCurrency(expenses)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Net profit</p>
+          <p
+            className={`text-lg font-semibold tabular-nums ${
+              profit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+            }`}
+          >
+            {formatCurrency(profit)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function DashboardClient({
+  monthSelect,
+  isViewingCurrentMonth,
+  viewingMonthLabel,
   kpis,
+  kpiCopy,
+  profitSummaries,
+  weekRangeLabel,
+  monthRangeLabel,
+  yearSummaryLabel,
   weeklyData,
   monthlyData,
+  yearlyData,
+  weeklyChartFootnote,
+  monthlyChartFootnote,
+  yearlyChartFootnote,
   bikeStatusCounts,
   revenueByBike,
   paymentStatusCounts,
@@ -119,6 +200,7 @@ export function DashboardClient({
   overdueCount,
   pendingPaymentCount,
   pendingRepairCount,
+  pieChartTitles,
 }: DashboardClientProps) {
   const bikeStatusPie = [
     { name: "Available", value: bikeStatusCounts.available, color: PIE_COLORS[0] },
@@ -141,7 +223,21 @@ export function DashboardClient({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <DashboardMonthSelect value={monthSelect.value} options={monthSelect.options} />
+      </div>
+
+      {!isViewingCurrentMonth && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Viewing {viewingMonthLabel}</AlertTitle>
+          <AlertDescription>
+            Money figures, profit charts, tables, and payment breakdowns are for this month only. Bike counts in the pie
+            chart are today&apos;s fleet snapshot.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {overdueCount > 0 && (
         <Alert variant="destructive">
@@ -179,78 +275,183 @@ export function DashboardClient({
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KPICard
-          title="Collected rent (this month)"
+          title={kpiCopy.rentTitle}
           value={formatCurrency(kpis.revenueThisMonth)}
           variant="default"
+          subtitle={kpiCopy.rentSubtitle}
         />
-        <KPICard title="Active rentals" value={kpis.activeRentals} />
+        <KPICard
+          title="Active rentals"
+          value={kpis.activeRentals}
+          subtitle={kpiCopy.activeSubtitle}
+        />
         <KPICard
           title="Pending payments"
           value={kpis.pendingPayments}
           variant={kpis.pendingPayments > 0 ? "warning" : "default"}
+          subtitle={kpiCopy.pendingSubtitle}
         />
         <KPICard
           title="Total fleet"
           value={kpis.totalBikes}
-          subtitle={`${kpis.availableBikes} available · ${kpis.rentedBikes} rented · ${kpis.repairBikes} repair`}
+          subtitle={
+            kpiCopy.fleetSubtitle
+              ? `${kpiCopy.fleetSubtitle} · ${kpis.availableBikes} available · ${kpis.rentedBikes} rented · ${kpis.repairBikes} repair`
+              : `${kpis.availableBikes} available · ${kpis.rentedBikes} rented · ${kpis.repairBikes} repair`
+          }
         />
         <KPICard
-          title="Expenses (this month)"
+          title={`${kpiCopy.expensesTitle} (${kpiCopy.rentSubtitle})`}
           value={formatCurrency(kpis.totalExpensesThisMonth)}
         />
         <KPICard
-          title="Net profit (this month)"
+          title={`${kpiCopy.profitTitle} (${kpiCopy.rentSubtitle})`}
           value={formatCurrency(kpis.netProfitThisMonth)}
           variant={kpis.netProfitThisMonth >= 0 ? "positive" : "negative"}
-          subtitle="Revenue is collected rent only"
+          subtitle="Collected rent minus repairs and expenses"
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Weekly collected rent (last 8 weeks)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="week" className="text-xs" />
-                  <YAxis className="text-xs" tickFormatter={(v) => `£${v}`} />
-                  <Tooltip formatter={(v: number | undefined) => [v != null ? `£${v.toFixed(2)}` : "", ""]} />
-                  <Bar dataKey="revenue" fill="#22c55e" name="Collected rent" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Monthly collected rent vs expenses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" className="text-xs" />
-                  <YAxis className="text-xs" tickFormatter={(v) => `£${v}`} />
-                  <Tooltip formatter={(v: number | undefined) => [v != null ? `£${v.toFixed(2)}` : "", ""]} />
-                  <Line type="monotone" dataKey="revenue" stroke="#22c55e" name="Collected rent" strokeWidth={2} />
-                  <Line type="monotone" dataKey="expenses" stroke="#ef4444" name="Expenses" strokeWidth={2} />
-                  <Legend />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Profit by period</CardTitle>
+          <CardDescription>
+            Switch between week, month, and year. Collected rent counts rentals whose contract start date falls in the
+            period; repairs and expenses use their own dates. Weeks are Monday–Sunday.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <Tabs defaultValue="month" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 sm:inline-flex sm:w-auto">
+              <TabsTrigger value="week">Weekly</TabsTrigger>
+              <TabsTrigger value="month">Monthly</TabsTrigger>
+              <TabsTrigger value="year">Yearly</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="week" className="mt-4 space-y-4">
+              <ProfitSummaryStrip
+                revenue={profitSummaries.week.revenue}
+                expenses={profitSummaries.week.expenses}
+                profit={profitSummaries.week.profit}
+                periodLabel={`Combined · ${weekRangeLabel}`}
+              />
+              <div className="h-[260px] w-full min-w-0">
+                {weeklyData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={weeklyData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="week" className="text-xs" tick={{ fontSize: 10 }} />
+                      <YAxis className="text-xs" tickFormatter={(v) => `£${v}`} width={48} />
+                      <Tooltip
+                        formatter={(v: number | undefined, name?: string) => [
+                          v != null ? `£${v.toFixed(2)}` : "",
+                          name === "revenue" ? "Rent" : name === "expenses" ? "Costs" : "Net profit",
+                        ]}
+                      />
+                      <Legend />
+                      <Bar dataKey="revenue" fill="#22c55e" name="Collected rent" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                      <Bar dataKey="expenses" fill="#fca5a5" name="Expenses" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                      <Line
+                        type="monotone"
+                        dataKey="profit"
+                        stroke="#3b82f6"
+                        name="Net profit"
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                    No calendar weeks in this range.
+                  </p>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">{weeklyChartFootnote}</p>
+            </TabsContent>
+
+            <TabsContent value="month" className="mt-4 space-y-4">
+              <ProfitSummaryStrip
+                revenue={profitSummaries.month.revenue}
+                expenses={profitSummaries.month.expenses}
+                profit={profitSummaries.month.profit}
+                periodLabel={monthRangeLabel}
+              />
+              <div className="h-[260px] w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="month" className="text-xs" />
+                    <YAxis className="text-xs" tickFormatter={(v) => `£${v}`} width={48} />
+                    <Tooltip
+                      formatter={(v: number | undefined, name?: string) => [
+                        v != null ? `£${v.toFixed(2)}` : "",
+                        name === "revenue" ? "Rent" : name === "expenses" ? "Costs" : "Net profit",
+                      ]}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="revenue" stroke="#22c55e" name="Collected rent" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="expenses" stroke="#ef4444" name="Expenses" strokeWidth={2} dot={false} />
+                    <Line
+                      type="monotone"
+                      dataKey="profit"
+                      stroke="#3b82f6"
+                      name="Net profit"
+                      strokeWidth={2}
+                      dot={{ r: 2 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-xs text-muted-foreground">{monthlyChartFootnote}</p>
+            </TabsContent>
+
+            <TabsContent value="year" className="mt-4 space-y-4">
+              <ProfitSummaryStrip
+                revenue={profitSummaries.year.revenue}
+                expenses={profitSummaries.year.expenses}
+                profit={profitSummaries.year.profit}
+                periodLabel={`Calendar year ${yearSummaryLabel}`}
+              />
+              <div className="h-[260px] w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={yearlyData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="year" className="text-xs" />
+                    <YAxis className="text-xs" tickFormatter={(v) => `£${v}`} width={52} />
+                    <Tooltip
+                      formatter={(v: number | undefined, name?: string) => [
+                        v != null ? `£${v.toFixed(2)}` : "",
+                        name === "revenue" ? "Rent" : name === "expenses" ? "Costs" : "Net profit",
+                      ]}
+                    />
+                    <Legend />
+                    <Bar dataKey="revenue" fill="#22c55e" name="Collected rent" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                    <Bar dataKey="expenses" fill="#fca5a5" name="Expenses" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                    <Line
+                      type="monotone"
+                      dataKey="profit"
+                      stroke="#3b82f6"
+                      name="Net profit"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-xs text-muted-foreground">{yearlyChartFootnote}</p>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Bike status</CardTitle>
+            {!isViewingCurrentMonth && (
+              <CardDescription>Today&apos;s fleet (not tied to the selected month)</CardDescription>
+            )}
           </CardHeader>
           <CardContent>
             <div className="h-[180px]">
@@ -283,7 +484,7 @@ export function DashboardClient({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Payment status</CardTitle>
+            <CardTitle className="text-base leading-snug">{pieChartTitles.payment}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[180px]">
@@ -315,7 +516,7 @@ export function DashboardClient({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Expense by category</CardTitle>
+            <CardTitle className="text-base leading-snug">{pieChartTitles.expense}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[180px]">
@@ -350,7 +551,8 @@ export function DashboardClient({
       {revenueByBike.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Collected rent by bike</CardTitle>
+            <CardTitle>Collected rent by bike ({viewingMonthLabel})</CardTitle>
+            <CardDescription>Rentals whose start date falls in this month</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[220px]">
@@ -371,7 +573,7 @@ export function DashboardClient({
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent rentals</CardTitle>
+            <CardTitle>Rentals starting {viewingMonthLabel}</CardTitle>
             <Button variant="outline" size="sm" asChild>
               <Link href="/rentals">View all</Link>
             </Button>
@@ -416,7 +618,7 @@ export function DashboardClient({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Pending payments</CardTitle>
+            <CardTitle>Pending ({viewingMonthLabel})</CardTitle>
             <Button variant="outline" size="sm" asChild>
               <Link href="/rentals/pending">View all</Link>
             </Button>
@@ -459,7 +661,7 @@ export function DashboardClient({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent repairs</CardTitle>
+            <CardTitle>Repairs ({viewingMonthLabel})</CardTitle>
             <Button variant="outline" size="sm" asChild>
               <Link href="/repairs">View all</Link>
             </Button>

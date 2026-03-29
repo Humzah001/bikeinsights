@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Bike } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from") || "/dashboard";
+  const timedOut = searchParams.get("reason") === "timeout";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,6 +52,13 @@ function LoginForm() {
         <CardDescription>Enter your password to continue</CardDescription>
       </CardHeader>
       <CardContent>
+        {timedOut ? (
+          <Alert className="mb-4" variant="default">
+            <AlertDescription>
+              You were signed out after 15 minutes of inactivity. Sign in again to continue.
+            </AlertDescription>
+          </Alert>
+        ) : null}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>

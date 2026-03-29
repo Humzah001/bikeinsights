@@ -1,5 +1,5 @@
 export type BikeStatus = "available" | "rented" | "under_repair" | "retired";
-export type RentalStatus = "active" | "completed" | "overdue";
+export type RentalStatus = "active" | "completed" | "overdue" | "inactive";
 export type PaymentStatus = "paid" | "pending" | "partial";
 export type RepairStatus = "pending" | "in_progress" | "completed";
 export type ExpenseCategory =
@@ -47,6 +47,15 @@ export interface Rental {
   weeks: string;
   status: RentalStatus;
   payment_status: PaymentStatus;
+  /** Security deposit held; refund when the bike is returned. */
+  deposit_amount?: string;
+  /** Whether the deposit has been returned to the customer. */
+  deposit_refunded?: string;
+  /**
+   * First weekly rent due date (YYYY-MM-DD). Week 2 is +7 days, etc.
+   * Empty = first Tuesday on or after start_date (legacy).
+   */
+  rent_collection_date?: string;
   notes: string;
   created_at: string;
 }

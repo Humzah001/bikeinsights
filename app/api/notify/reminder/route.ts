@@ -19,6 +19,16 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (
+      rental.payment_status === "paid" ||
+      rental.status === "inactive" ||
+      rental.status === "completed"
+    ) {
+      return NextResponse.json(
+        { error: "Rent is settled for this rental; reminders are not sent." },
+        { status: 400 }
+      );
+    }
     const result = await sendReminderEmail({
       to: rental.customer_email,
       customerName: rental.customer_name,
