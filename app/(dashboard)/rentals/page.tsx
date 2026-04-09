@@ -21,8 +21,14 @@ import {
 } from "@/components/ui/select";
 import { RentalStatusBadge, PaymentStatusBadge } from "@/components/rentals/PaymentStatusBadge";
 import type { Rental, Bike } from "@/lib/types";
-import { getDaysOverdue, isOverdue, getWeeksPaid } from "@/lib/calculations";
-import { format, parseISO } from "date-fns";
+import {
+  getCollectedRentAttributedToRange,
+  getDaysOverdue,
+  getWeeksPaid,
+  isOverdue,
+  rentalCountsTowardRevenue,
+} from "@/lib/calculations";
+import { endOfMonth, format, parseISO, startOfMonth } from "date-fns";
 import { Plus, Download, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -79,17 +85,12 @@ export default function RentalsPage() {
   });
 
   const activeCount = rentals.filter((r) => r.status === "active").length;
+  const now = new Date();
+  const calendarMonthStart = startOfMonth(now);
+  const calendarMonthEnd = endOfMonth(now);
   const thisMonthRevenue = rentals
-    .filter((r) => {
-      const start = parseISO(r.start_date);
-      const now = new Date();
-      return (
-        start.getMonth() === now.getMonth() &&
-        start.getFullYear() === now.getFullYear() &&
-        (r.status === "active" || r.status === "completed" || r.status === "overdue" || r.status === "inactive")
-      );
-    })
-    .reduce((sum, r) => sum + Number(r.amount_paid || 0), 0);
+    .filter((r) => rentalCountsTowardRevenue(r))
+    .reduce((sum, r) => sum + getCollectedRentAttributedToRange(r, calendarMonthStart, calendarMonthEnd), 0);
 
   function exportCSV() {
     const headers = [

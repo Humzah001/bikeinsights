@@ -1,6 +1,7 @@
 import * as db from "@/lib/db";
 import type { Rental, Repair, Expense, Bike } from "@/lib/types";
 import { format, parseISO, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { getCollectedRentAttributedToRange, rentalCountsTowardRevenue } from "@/lib/calculations";
 import { AnalyticsClient } from "./AnalyticsClient";
 
 export const dynamic = "force-dynamic";
@@ -20,11 +21,8 @@ export default async function AnalyticsPage() {
     const start = startOfMonth(month);
     const end = endOfMonth(month);
     const revenue = rentals
-      .filter((r) => {
-        const d = parseISO(r.start_date);
-        return d >= start && d <= end;
-      })
-      .reduce((sum, r) => sum + Number(r.amount_paid || 0), 0);
+      .filter((r) => rentalCountsTowardRevenue(r))
+      .reduce((sum, r) => sum + getCollectedRentAttributedToRange(r, start, end), 0);
     const repCost = repairs
       .filter((r) => {
         const d = parseISO(r.repair_date);
@@ -49,11 +47,8 @@ export default async function AnalyticsPage() {
     const start = startOfMonth(month);
     const end = endOfMonth(month);
     const revenue = rentals
-      .filter((r) => {
-        const d = parseISO(r.start_date);
-        return d >= start && d <= end;
-      })
-      .reduce((sum, r) => sum + Number(r.amount_paid || 0), 0);
+      .filter((r) => rentalCountsTowardRevenue(r))
+      .reduce((sum, r) => sum + getCollectedRentAttributedToRange(r, start, end), 0);
     const repCost = repairs
       .filter((r) => {
         const d = parseISO(r.repair_date);

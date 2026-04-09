@@ -11,7 +11,11 @@ import {
   endOfWeek,
   addWeeks,
 } from "date-fns";
-import { getMonthKey } from "@/lib/calculations";
+import {
+  getCollectedRentAttributedToRange,
+  getMonthKey,
+  rentalCountsTowardRevenue,
+} from "@/lib/calculations";
 import { DashboardClient } from "./DashboardClient";
 
 export const dynamic = "force-dynamic";
@@ -23,22 +27,13 @@ function parseViewMonth(monthParam: string | undefined, fallback: Date): Date {
   return new Date(y, m - 1, 1);
 }
 
-function rentalCountsTowardRevenue(r: Rental): boolean {
-  return (
-    r.status === "completed" ||
-    r.status === "active" ||
-    r.status === "overdue" ||
-    r.status === "inactive"
-  );
-}
-
 function rentalOverlapsRange(r: Rental, rangeStart: Date, rangeEnd: Date): boolean {
   const s = parseISO(r.start_date);
   const e = parseISO(r.end_date);
   return s <= rangeEnd && e >= rangeStart;
 }
 
-/** Collected rent (by rental start date in range) minus repairs + expenses (by their dates). */
+/** Collected rent (by weekly due dates in range, FIFO) minus repairs + expenses (by their dates). */
 function profitInRange(
   rentals: Rental[],
   repairs: Repair[],
@@ -47,11 +42,8 @@ function profitInRange(
   rangeEnd: Date
 ): { revenue: number; expenses: number; profit: number } {
   const revenue = rentals
-    .filter((r) => {
-      const s = parseISO(r.start_date);
-      return s >= rangeStart && s <= rangeEnd && rentalCountsTowardRevenue(r);
-    })
-    .reduce((sum, r) => sum + Number(r.amount_paid || 0), 0);
+    .filter((r) => rentalCountsTowardRevenue(r))
+    .reduce((sum, r) => sum + getCollectedRentAttributedToRange(r, rangeStart, rangeEnd), 0);
 
   const repairCosts = repairs
     .filter((r) => {
@@ -190,14 +182,8 @@ export default async function DashboardPage({
   const revenueByBike = bikes
     .map((b) => {
       const total = rentals
-        .filter(
-          (r) =>
-            r.bike_id === b.id &&
-            rentalCountsTowardRevenue(r) &&
-            parseISO(r.start_date) >= viewMonthStart &&
-            parseISO(r.start_date) <= viewMonthEnd
-        )
-        .reduce((sum, r) => sum + Number(r.amount_paid || 0), 0);
+        .filter((r) => r.bike_id === b.id && rentalCountsTowardRevenue(r))
+        .reduce((sum, r) => sum + getCollectedRentAttributedToRange(r, viewMonthStart, viewMonthEnd), 0);
       return { name: b.name, revenue: total };
     })
     .filter((x) => x.revenue > 0)

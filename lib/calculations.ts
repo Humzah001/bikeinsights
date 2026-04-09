@@ -1,4 +1,12 @@
-import { addDays, differenceInDays, format, parseISO, startOfDay } from "date-fns";
+import {
+  addDays,
+  differenceInDays,
+  endOfDay,
+  format,
+  isWithinInterval,
+  parseISO,
+  startOfDay,
+} from "date-fns";
 
 export type WeeklyRentGateResult = { ok: true } | { ok: false; reason: string };
 
@@ -157,6 +165,162 @@ export function getMonthKey(date: Date): string {
 export function getWeeksPaid(amountPaid: number, weeklyRate: number): number {
   if (weeklyRate <= 0) return 0;
   return Math.floor(amountPaid / weeklyRate);
+}
+
+/** Whether this rental's payments should appear in revenue / P&L views. */
+export function rentalCountsTowardRevenue(r: { status: string }): boolean {
+  return (
+    r.status === "completed" ||
+    r.status === "active" ||
+    r.status === "overdue" ||
+    r.status === "inactive"
+  );
+}
+
+/** True if a rent due calendar day falls inside [rangeStart, rangeEnd] (inclusive). */
+export function isRentDueDateInRange(due: Date, rangeStart: Date, rangeEnd: Date): boolean {
+  return isWithinInterval(startOfDay(due), {
+    start: startOfDay(rangeStart),
+    end: endOfDay(rangeEnd),
+  });
+}
+
+/**
+ * Part of amount_paid attributed to a date range using weekly due dates (FIFO).
+ * Week 1 due = rent_collection_date or first Tuesday on or after start_date; week N = +7 days each.
+ */
+export function getCollectedRentAttributedToRange(
+  rental: RentalForPendingRent,
+  rangeStart: Date,
+  rangeEnd: Date
+): number {
+  if (!rental.start_date?.trim()) return 0;
+  const rate = Number(rental.weekly_rate || 0);
+  const paid = Number(rental.amount_paid || 0);
+  if (rate <= 0 || paid <= 0) return 0;
+
+  try {
+    getFirstRentDueAnchor(rental);
+  } catch {
+    return 0;
+  }
+
+  const fullWeeks = getWeeksPaid(paid, rate);
+  const remainder = Math.round((paid - fullWeeks * rate) * 100) / 100;
+  const totalWeeks = parseInt(rental.weeks, 10) || 0;
+  const cappedFull = totalWeeks > 0 ? Math.min(fullWeeks, totalWeeks) : fullWeeks;
+
+  let sum = 0;
+  for (let w = 1; w <= cappedFull; w++) {
+    const due = getRentDueDateForWeek(rental, w);
+    if (isRentDueDateInRange(due, rangeStart, rangeEnd)) {
+      sum += rate;
+    }
+  }
+
+  if (remainder > 0.001) {
+    const w = fullWeeks + 1;
+    if (totalWeeks <= 0 || w <= totalWeeks) {
+      const due = getRentDueDateForWeek(rental, w);
+      if (isRentDueDateInRange(due, rangeStart, rangeEnd)) {
+        sum += remainder;
+      }
+    }
+  }
+
+  return sum;
+}
+
+/** One implied weekly collection derived from amount_paid and due dates (no per-payment timestamps in DB). */
+export type ImpliedRentCollectionRow = {
+  rentalId: string;
+  customerName: string;
+  contractStart: string;
+  contractEnd: string;
+  weekIndex: number;
+  dueDate: Date;
+  amount: number;
+  isPartial: boolean;
+};
+
+type RentalForImpliedCollections = RentalForPendingRent & {
+  id: string;
+  customer_name: string;
+  end_date: string;
+};
+
+/**
+ * Reconstructs which rent weeks are covered by amount_paid (FIFO: week 1, then 2, …).
+ * "Due date" is the scheduled rent week; exact time you tapped Record payment is not stored.
+ */
+export function impliedWeeklyRentCollectionRows(rental: RentalForImpliedCollections): ImpliedRentCollectionRow[] {
+  const rate = Number(rental.weekly_rate || 0);
+  const paid = Number(rental.amount_paid || 0);
+  if (!rental.start_date?.trim() || rate <= 0 || paid <= 0) return [];
+
+  try {
+    getFirstRentDueAnchor(rental);
+  } catch {
+    return [];
+  }
+
+  const fullWeeks = getWeeksPaid(paid, rate);
+  const remainder = Math.round((paid - fullWeeks * rate) * 100) / 100;
+  const totalWeeks = parseInt(rental.weeks, 10) || 0;
+  const cappedFull = totalWeeks > 0 ? Math.min(fullWeeks, totalWeeks) : fullWeeks;
+
+  const rows: ImpliedRentCollectionRow[] = [];
+  for (let w = 1; w <= cappedFull; w++) {
+    rows.push({
+      rentalId: rental.id,
+      customerName: rental.customer_name,
+      contractStart: rental.start_date,
+      contractEnd: rental.end_date,
+      weekIndex: w,
+      dueDate: getRentDueDateForWeek(rental, w),
+      amount: rate,
+      isPartial: false,
+    });
+  }
+
+  if (remainder > 0.001) {
+    const w = fullWeeks + 1;
+    if (totalWeeks <= 0 || w <= totalWeeks) {
+      rows.push({
+        rentalId: rental.id,
+        customerName: rental.customer_name,
+        contractStart: rental.start_date,
+        contractEnd: rental.end_date,
+        weekIndex: w,
+        dueDate: getRentDueDateForWeek(rental, w),
+        amount: remainder,
+        isPartial: true,
+      });
+    }
+  }
+
+  return rows;
+}
+
+/** Earliest next unpaid rent week (due today or later) across rentals, e.g. for a bike. */
+export function getEarliestNextRentDueAmongRentals(
+  rentals: RentalForImpliedCollections[],
+  today: Date
+): { rentalId: string; customerName: string; weekNum: number; dueDate: Date } | null {
+  let best: { rentalId: string; customerName: string; weekNum: number; dueDate: Date } | null = null;
+  for (const r of rentals) {
+    const next = getNextUpcomingRentWeek(r, today);
+    if (!next) continue;
+    if (!best || next.dueDate.getTime() < best.dueDate.getTime()) {
+      best = {
+        rentalId: r.id,
+        customerName: r.customer_name,
+        weekNum: next.weekNum,
+        dueDate: next.dueDate,
+      };
+    }
+  }
+  return best;
 }
 
 /** Amount still owed. */

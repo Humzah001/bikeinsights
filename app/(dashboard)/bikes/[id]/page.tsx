@@ -4,7 +4,7 @@ import Link from "next/link";
 import * as db from "@/lib/db";
 import { BikeStatusBadge } from "@/components/bikes/BikeStatusBadge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -14,7 +14,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Bike, Rental, Repair, Expense } from "@/lib/types";
-import { formatCurrency } from "@/lib/calculations";
+import {
+  formatCurrency,
+  getEarliestNextRentDueAmongRentals,
+  impliedWeeklyRentCollectionRows,
+} from "@/lib/calculations";
+import { format } from "date-fns";
 import { Pencil, Plus, Wrench, Wallet, Calendar } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +48,12 @@ export default async function BikeDetailPage({
   const totalRepairCost = bikeRepairs.reduce((sum, r) => sum + Number(r.cost), 0);
   const totalExpenseCost = bikeExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
   const netProfit = totalRevenue - totalRepairCost - totalExpenseCost;
+
+  const today = new Date();
+  const nextRentDue = getEarliestNextRentDueAmongRentals(bikeRentals, today);
+  const rentCollectionHistory = bikeRentals
+    .flatMap((r) => impliedWeeklyRentCollectionRows(r))
+    .sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime());
 
   const currentRental = bikeRentals.find(
     (r) => r.status === "active" || r.status === "overdue" || r.status === "inactive"
@@ -161,10 +172,83 @@ export default async function BikeDetailPage({
               >
                 Net profit: {formatCurrency(netProfit)}
               </p>
+              {nextRentDue ? (
+                <p className="border-t pt-2 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Next rent due: </span>
+                  {format(nextRentDue.dueDate, "EEE d MMM yyyy")} (week {nextRentDue.weekNum}) —{" "}
+                  {nextRentDue.customerName}
+                  <Button variant="link" size="sm" className="h-auto p-0 pl-1 align-baseline" asChild>
+                    <Link href={`/rentals/${nextRentDue.rentalId}`}>Open rental</Link>
+                  </Button>
+                </p>
+              ) : bikeRentals.length > 0 ? (
+                <p className="border-t pt-2 text-sm text-muted-foreground">
+                  No upcoming rent due—contracts are fully paid or have no future weeks scheduled.
+                </p>
+              ) : null}
             </CardContent>
           </Card>
+
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Collected rent history</CardTitle>
+          <CardDescription>
+            Each row is one week of rent implied by your recorded payments and the weekly due schedule (first rent due
+            date on the rental, then +7 days per week). Exact collection times are not stored—only totals on the rental.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table className="min-w-[640px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Due date (rent week)</TableHead>
+                <TableHead>Week</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Rental period</TableHead>
+                <TableHead className="w-[1%]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rentCollectionHistory.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    No rent collected yet for this bike
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rentCollectionHistory.map((row, i) => (
+                  <TableRow key={`${row.rentalId}-w${row.weekIndex}-${row.dueDate.getTime()}-${i}`}>
+                    <TableCell className="whitespace-nowrap">
+                      <span className="font-medium">{format(row.dueDate, "EEE d MMM yyyy")}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">{format(row.dueDate, "yyyy-MM-dd")}</span>
+                    </TableCell>
+                    <TableCell>
+                      {row.weekIndex}
+                      {row.isPartial ? (
+                        <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">(partial)</span>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCurrency(row.amount)}</TableCell>
+                    <TableCell>{row.customerName}</TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
+                      {row.contractStart} → {row.contractEnd}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                        <Link href={`/rentals/${row.rentalId}`}>Rental</Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -177,14 +261,16 @@ export default async function BikeDetailPage({
                 <TableHead>Customer</TableHead>
                 <TableHead>Start</TableHead>
                 <TableHead>End</TableHead>
-                <TableHead>Amount</TableHead>
+                <TableHead>Contract total</TableHead>
+                <TableHead className="text-right">Collected</TableHead>
+                <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {bikeRentals.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     No rentals yet
                   </TableCell>
                 </TableRow>
@@ -201,6 +287,10 @@ export default async function BikeDetailPage({
                       <TableCell>{r.start_date}</TableCell>
                       <TableCell>{r.end_date}</TableCell>
                       <TableCell>£{r.total_amount}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatCurrency(Number(r.amount_paid || 0))}
+                      </TableCell>
+                      <TableCell>{r.payment_status}</TableCell>
                       <TableCell>{r.status}</TableCell>
                     </TableRow>
                   ))

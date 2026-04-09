@@ -316,8 +316,9 @@ export function DashboardClient({
         <CardHeader>
           <CardTitle>Profit by period</CardTitle>
           <CardDescription>
-            Switch between week, month, and year. Collected rent counts rentals whose contract start date falls in the
-            period; repairs and expenses use their own dates. Weeks are Monday–Sunday.
+            Switch between week, month, and year. Collected rent is split by each week&apos;s due date (first rent due
+            date plus 7 days per week), not by contract start. Repairs and expenses use their own dates. Weeks are
+            Monday–Sunday.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -552,7 +553,7 @@ export function DashboardClient({
         <Card>
           <CardHeader>
             <CardTitle>Collected rent by bike ({viewingMonthLabel})</CardTitle>
-            <CardDescription>Rentals whose start date falls in this month</CardDescription>
+            <CardDescription>Rent collected this month by weekly due dates</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[220px]">
