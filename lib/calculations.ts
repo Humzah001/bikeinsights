@@ -41,6 +41,32 @@ export function getRentDueDateForWeek(rental: RentalForPendingRent, weekIndex: n
   return addDays(anchor, (weekIndex - 1) * 7);
 }
 
+/** YYYY-MM-DD for when contract week `weekIndex` (1-based) was due; null if unknown. */
+export function formatRentWeekDueDate(rental: RentalForPendingRent, weekIndex: number): string | null {
+  if (weekIndex < 1 || !rental.start_date?.trim()) return null;
+  try {
+    return format(getRentDueDateForWeek(rental, weekIndex), "yyyy-MM-dd");
+  } catch {
+    return null;
+  }
+}
+
+/** 1-based contract week whose scheduled due is `dueIso` (YYYY-MM-DD), or null. */
+export function findContractWeekForDueDate(
+  rental: RentalForPendingRent,
+  dueIso: string
+): number | null {
+  const target = dueIso.trim();
+  if (!target || !rental.start_date?.trim()) return null;
+  const total = parseInt(rental.weeks, 10) || 0;
+  const cap = Math.min(Math.max(total, 1) + 8, 120);
+  for (let w = 1; w <= cap; w++) {
+    const d = formatRentWeekDueDate(rental, w);
+    if (d === target) return w;
+  }
+  return null;
+}
+
 /** Legacy: first Tuesday on or after start, then weekly. Same as empty rent_collection_date. */
 export function getRentDueTuesdayForWeek(startDate: string, weekIndex: number): Date {
   return getRentDueDateForWeek(

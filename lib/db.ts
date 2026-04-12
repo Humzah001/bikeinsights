@@ -1,5 +1,21 @@
 import { getSupabase } from "@/lib/supabase/server";
-import type { Bike, Rental, Repair, Expense, Notification } from "@/lib/types";
+import type { Bike, Rental, RentalPayment, Repair, Expense, Notification } from "@/lib/types";
+import { v4 as uuidv4 } from "uuid";
+
+/** PostgREST: table not exposed or does not exist (migration not applied). */
+function isRentalPaymentsTableMissing(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  if (error.code === "PGRST205") return true;
+  const msg = String(error.message ?? "");
+  return msg.includes("rental_payments") && (msg.includes("schema cache") || msg.includes("Could not find the table"));
+}
+
+export function isRentalPaymentsSetupError(e: unknown): boolean {
+  if (e instanceof Error && e.message.includes("rental_payments")) return true;
+  if (typeof e === "object" && e !== null && isRentalPaymentsTableMissing(e as { code?: string; message?: string }))
+    return true;
+  return false;
+}
 
 export async function getBikes(): Promise<Bike[]> {
   const { data, error } = await getSupabase().from("bikes").select("*").order("created_at", { ascending: false });
@@ -63,6 +79,63 @@ export async function updateRental(id: string, updates: Partial<Rental>): Promis
 export async function deleteRental(id: string): Promise<void> {
   const { error } = await getSupabase().from("rentals").delete().eq("id", id);
   if (error) throw error;
+}
+
+function rowToRentalPayment(r: Record<string, unknown>): RentalPayment {
+  const dueRaw = r.due_on != null && r.due_on !== "" ? String(r.due_on).slice(0, 10) : "";
+  return {
+    id: String(r.id ?? ""),
+    rental_id: String(r.rental_id ?? ""),
+    amount: String(r.amount ?? "0"),
+    ...(dueRaw ? { due_on: dueRaw } : {}),
+    collected_on: String(r.collected_on ?? "").slice(0, 10),
+    week_number: r.week_number != null && r.week_number !== "" ? Number(r.week_number) : null,
+    payment_type: (r.payment_type as RentalPayment["payment_type"]) ?? "manual",
+    created_at: r.created_at ? new Date(r.created_at as string).toISOString() : new Date().toISOString(),
+  };
+}
+
+export async function createRentalPayment(
+  row: Omit<RentalPayment, "created_at" | "id"> & { id?: string }
+): Promise<RentalPayment> {
+  const id = row.id ?? `pay-${uuidv4().slice(0, 12)}`;
+  const payload = {
+    id,
+    rental_id: row.rental_id,
+    amount: row.amount,
+    due_on: row.due_on?.trim() || null,
+    collected_on: row.collected_on,
+    week_number: row.week_number ?? null,
+    payment_type: row.payment_type,
+  };
+  const { data, error } = await getSupabase().from("rental_payments").insert(payload).select().single();
+  if (error) {
+    if (isRentalPaymentsTableMissing(error)) {
+      throw new Error(
+        "Database table rental_payments is missing. Open Supabase → SQL Editor, run supabase/migrations/004_rental_payments.sql, then try again."
+      );
+    }
+    throw error;
+  }
+  return rowToRentalPayment(data as Record<string, unknown>);
+}
+
+export async function getAllRentalPayments(): Promise<RentalPayment[]> {
+  const { data, error } = await getSupabase()
+    .from("rental_payments")
+    .select("*")
+    .order("collected_on", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) {
+    if (isRentalPaymentsTableMissing(error)) {
+      console.warn(
+        "[bikeinsights] rental_payments table missing — run supabase/migrations/004_rental_payments.sql in Supabase SQL Editor."
+      );
+      return [];
+    }
+    throw error;
+  }
+  return (data ?? []).map((r) => rowToRentalPayment(r as Record<string, unknown>));
 }
 
 export async function getRepairs(): Promise<Repair[]> {

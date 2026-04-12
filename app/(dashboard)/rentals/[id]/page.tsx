@@ -79,7 +79,10 @@ export default function RentalDetailPage() {
       const res = await fetch(`/api/rentals/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payment_status: "paid" }),
+        body: JSON.stringify({
+          payment_status: "paid",
+          collected_on: format(new Date(), "yyyy-MM-dd"),
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -102,7 +105,10 @@ export default function RentalDetailPage() {
       const res = await fetch(`/api/rentals/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ record_weekly_payment: true }),
+        body: JSON.stringify({
+          record_weekly_payment: true,
+          collected_on: format(new Date(), "yyyy-MM-dd"),
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -156,7 +162,10 @@ export default function RentalDetailPage() {
       const res = await fetch(`/api/rentals/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ add_amount_paid: n }),
+        body: JSON.stringify({
+          add_amount_paid: n,
+          collected_on: format(new Date(), "yyyy-MM-dd"),
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

@@ -21,6 +21,7 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { calculateWeeks, calculateTotalAmount, getDefaultRentCollectionDate } from "@/lib/calculations";
 import type { Bike } from "@/lib/types";
+import { format } from "date-fns";
 
 const schema = z.object({
   bike_id: z.string().min(1, "Select a bike"),
@@ -127,6 +128,7 @@ function AddRentalForm() {
           rent_collection_date: data.rent_collection_date || "",
           deposit_amount: data.deposit_amount ? Number(data.deposit_amount) : 0,
           notes: data.notes,
+          collected_on: format(new Date(), "yyyy-MM-dd"),
         }),
       });
       if (!res.ok) {

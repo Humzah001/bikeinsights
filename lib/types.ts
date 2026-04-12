@@ -32,6 +32,21 @@ export interface Bike {
   created_at: string;
 }
 
+/** Logged when rent is recorded (weekly, manual add, full settlement, or initial on create). */
+export interface RentalPayment {
+  id: string;
+  rental_id: string;
+  amount: string;
+  /** When this rent was due per the rental schedule (YYYY-MM-DD). */
+  due_on?: string;
+  /** Calendar date rent was actually recorded in the app (YYYY-MM-DD). */
+  collected_on: string;
+  /** 1-based contract week when recorded via weekly payment; otherwise null. */
+  week_number: number | null;
+  payment_type: "weekly" | "manual" | "settlement" | "initial" | "adjustment";
+  created_at: string;
+}
+
 export interface Rental {
   id: string;
   bike_id: string;

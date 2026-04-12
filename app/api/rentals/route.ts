@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import * as db from "@/lib/db";
 import type { Rental, PaymentStatus, RentalStatus } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
-import { calculateWeeks, calculateTotalAmount } from "@/lib/calculations";
+import { calculateWeeks, calculateTotalAmount, formatRentWeekDueDate } from "@/lib/calculations";
+import { resolveCollectedOn } from "@/lib/resolve-collected-on";
 
 export async function GET() {
   const data = await db.getRentals();
@@ -67,6 +68,34 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString(),
     };
     const created = await db.createRental(row);
+
+    if (amountPaidNum > 0.001) {
+      try {
+        const dueInitial = formatRentWeekDueDate(
+          {
+            start_date: row.start_date,
+            weeks: row.weeks,
+            weekly_rate: row.weekly_rate,
+            rent_collection_date: row.rent_collection_date,
+          },
+          1
+        );
+        await db.createRentalPayment({
+          rental_id: row.id,
+          amount: String(amountPaidNum),
+          ...(dueInitial ? { due_on: dueInitial } : {}),
+          collected_on: resolveCollectedOn(body),
+          week_number: 1,
+          payment_type: "initial",
+        });
+      } catch (e) {
+        if (db.isRentalPaymentsSetupError(e)) {
+          console.warn("[bikeinsights] Skipped initial payment log:", e);
+        } else {
+          throw e;
+        }
+      }
+    }
 
     const bike = await db.getBikeById(row.bike_id);
     if (bike) {
