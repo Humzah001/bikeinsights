@@ -1,47 +1,12 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import Link from "next/link";
-import { Check, Copy, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 type Path = "workspace" | "invited";
-
-function CopyBlock({ text, toastLabel = "Copied to clipboard" }: { text: string; toastLabel?: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      toast.success(toastLabel);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Could not copy");
-    }
-  }
-
-  return (
-    <div className="relative mt-3 rounded-lg border border-border/70 bg-muted/60 dark:bg-muted/25">
-      <pre className="max-h-40 overflow-x-auto overflow-y-auto break-words p-3 pr-12 font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-foreground">
-        <code>{text}</code>
-      </pre>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        className="absolute top-1.5 right-1.5 text-muted-foreground hover:text-foreground"
-        onClick={handleCopy}
-        aria-label="Copy to clipboard"
-      >
-        {copied ? <Check className="size-3.5" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
-      </Button>
-    </div>
-  );
-}
 
 function StepCard({
   step,
@@ -77,6 +42,7 @@ function StepCard({
 
 export function LandingGetStarted({ contactEmail }: { contactEmail: string }) {
   const [path, setPath] = useState<Path>("workspace");
+  const mailto = `mailto:${contactEmail}?subject=${encodeURIComponent("My Bike Insights - trial or workspace")}`;
 
   return (
     <section
@@ -91,7 +57,7 @@ export function LandingGetStarted({ contactEmail }: { contactEmail: string }) {
               Get started
             </h2>
             <p className="text-muted-foreground mt-3 text-pretty leading-relaxed">
-              To launch your workspace and collect your first rents in the app, follow these steps.
+              A simple path from “interested” to running your shop in the app, no technical steps required on your side.
             </p>
           </div>
           <Tabs value={path} onValueChange={(v) => setPath(v as Path)} className="w-full shrink-0 lg:w-auto">
@@ -108,51 +74,58 @@ export function LandingGetStarted({ contactEmail }: { contactEmail: string }) {
 
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
           {path === "workspace" ? (
-            <StepCard step={1} title="Contact us">
+            <StepCard step={1} title="Tell us you are ready">
               <p className="text-muted-foreground">
-                Start with a free 15-day trial or the paid plan. Send one email and we will create your workspace and
-                invites.
+                Whether you want the free trial or the monthly plan, send one message and we will set up your workspace
+                and send invitations to your team when everything is ready.
               </p>
-              <CopyBlock text={contactEmail} toastLabel="Email copied" />
+              <p className="text-muted-foreground mt-3">
+                Write to{" "}
+                <a href={mailto} className="font-medium text-foreground underline-offset-4 hover:underline">
+                  {contactEmail}
+                </a>{" "}
+                from the inbox you use for the business.
+              </p>
+              <Button className="mt-4 w-full sm:w-auto" variant="outline" size="sm" asChild>
+                <a href={mailto}>Open your email app</a>
+              </Button>
             </StepCard>
           ) : (
-            <StepCard step={1} title="Open your invite">
+            <StepCard step={1} title="Open your invitation">
               <p className="text-muted-foreground">
-                Use the link in your invitation email from My Bike Insights. It opens the secure accept page for your
-                shop.
+                Look for an email from My Bike Insights and tap the button or link inside. That takes you to a secure
+                page just for finishing your account, tied to your shop.
               </p>
-              <CopyBlock text="/invite/accept" toastLabel="Path copied" />
-              <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
-                Your real link includes a token; only use the message from your inbox.
+              <p className="text-muted-foreground mt-3">
+                Cannot find it? Check spam, or ask whoever invited you to send it again.
               </p>
             </StepCard>
           )}
 
-          <StepCard step={2} title="Complete signup">
+          <StepCard step={2} title="Finish your account">
             <p className="text-muted-foreground">
-              On the accept page, add your name, phone, and password. That finishes your account and attaches you to the
-              workspace.
+              On that page you will enter your name, phone, and a password you choose. When you submit, you are part of
+              the workspace and can sign in anytime.
             </p>
-            <CopyBlock text="/invite/accept" toastLabel="Path copied" />
-            <Link
-              href="/invite/accept"
-              className="text-primary mt-3 inline-flex items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
-            >
-              Open invite accept page
-              <ExternalLink className="size-3.5" aria-hidden />
-            </Link>
+            <p className="text-muted-foreground mt-3">
+              Keep the tab open until you see confirmation; if it expired, ask your admin for a fresh invite.
+            </p>
+            <Button className="mt-4 w-full sm:w-auto" variant="outline" size="sm" asChild>
+              <Link href="/invite/accept">I need the signup screen</Link>
+            </Button>
           </StepCard>
 
-          <StepCard step={3} title="Sign in and go to work">
+          <StepCard step={3} title="Sign in and get to work">
             <p className="text-muted-foreground">
-              Sign in with your work email, then jump to the dashboard to add bikes, rentals, and your first payments.
+              Next time, open the app with your work email and password. You will land in your dashboard so you can add
+              bikes, rentals, and record payments like you already do at the desk.
             </p>
-            <CopyBlock text="/login" toastLabel="Path copied" />
             <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
-              If something looks wrong after deploy, disable strict blockers for this site and try again, or email us.
+              If a page will not load, try turning off strict content blockers for this site once, or write us and we
+              will sort it out.
             </p>
             <Button className="mt-4 w-full sm:w-auto" size="sm" asChild>
-              <Link href="/login">Go to sign in</Link>
+              <Link href="/login">Sign in to the app</Link>
             </Button>
           </StepCard>
         </div>
