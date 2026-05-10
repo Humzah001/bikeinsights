@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 const SCROLL_THRESHOLD_PX = 16;
@@ -64,6 +65,7 @@ export function LandingHeader() {
               </Button>
             ))}
             <span className="mx-0.5 hidden h-5 w-px shrink-0 bg-border lg:block" aria-hidden />
+            <ThemeToggle className="text-muted-foreground" />
             <Button
               variant="outline"
               size="sm"
@@ -82,6 +84,7 @@ export function LandingHeader() {
           </nav>
 
           <div className="flex shrink-0 items-center gap-1.5 md:hidden">
+            <ThemeToggle />
             <Button
               variant="outline"
               size="sm"
@@ -114,7 +117,10 @@ export function LandingHeader() {
           showCloseButton
         >
           <DialogHeader>
-            <DialogTitle className="text-left">Menu</DialogTitle>
+            <div className="flex items-center justify-between gap-2 pr-8">
+              <DialogTitle className="text-left">Menu</DialogTitle>
+              <ThemeToggle align="end" />
+            </div>
           </DialogHeader>
           <nav className="flex flex-col gap-2 pt-2" aria-label="Mobile">
             <Button

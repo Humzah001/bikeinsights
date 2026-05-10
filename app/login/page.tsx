@@ -11,6 +11,7 @@ import { Bike } from "lucide-react";
 import { toast } from "sonner";
 import { SupabaseInviteFromHash } from "@/app/login/SupabaseInviteFromHash";
 import { userFacingApiError } from "@/lib/user-facing-error";
+import { ThemeToggleCorner } from "@/components/ThemeToggle";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -143,7 +144,8 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-muted/30 p-4">
+      <ThemeToggleCorner />
       <Suspense
         fallback={
           <Card className="w-full max-w-sm">

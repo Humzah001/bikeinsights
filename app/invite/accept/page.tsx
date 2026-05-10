@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 import { normalizePhoneDigits } from "@/lib/phone-normalize";
 import { userFacingApiError } from "@/lib/user-facing-error";
+import { ThemeToggleCorner } from "@/components/ThemeToggle";
 
 function AcceptForm() {
   const router = useRouter();
@@ -189,7 +190,8 @@ function AcceptForm() {
 
 export default function InviteAcceptPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-muted/30 p-4">
+      <ThemeToggleCorner />
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <AcceptForm />
       </Suspense>

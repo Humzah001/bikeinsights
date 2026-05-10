@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 import { isPlausibleInviteRawToken } from "@/lib/invite-token-format";
+import { ThemeToggleCorner } from "@/components/ThemeToggle";
 
 /**
  * Stable URL for Supabase Auth redirects after invite / magic links.
@@ -119,7 +120,8 @@ function AuthCallbackInner() {
 
 export default function AuthCallbackPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-muted/30 p-4">
+      <ThemeToggleCorner />
       <Suspense fallback={<p className="text-muted-foreground text-sm">Loading…</p>}>
         <AuthCallbackInner />
       </Suspense>

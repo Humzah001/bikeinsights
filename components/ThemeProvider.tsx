@@ -5,7 +5,7 @@ import { Toaster } from "sonner";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
-    <NextThemesProvider attribute="class" defaultTheme="dark" enableSystem storageKey="bikeinsights-theme">
+    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem storageKey="bikeinsights-theme">
       {children}
       <Toaster richColors position="top-right" />
     </NextThemesProvider>

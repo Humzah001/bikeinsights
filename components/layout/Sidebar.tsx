@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSidebar } from "./DashboardShell";
 
 const navItems = [
@@ -104,6 +105,20 @@ export function Sidebar({ showPlatformAdmin }: { showPlatformAdmin?: boolean }) 
           </Link>
         ) : null}
       </nav>
+      <div
+        className={cn(
+          "mt-auto border-t border-sidebar-border p-2",
+          collapsed && "flex justify-center",
+        )}
+      >
+        <ThemeToggle
+          className={cn(
+            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            collapsed && "size-9",
+          )}
+          align="start"
+        />
+      </div>
     </aside>
   );
 }

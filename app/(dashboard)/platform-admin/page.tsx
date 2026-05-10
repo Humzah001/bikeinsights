@@ -27,6 +27,7 @@ import { MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
@@ -85,7 +86,8 @@ function InvitesMenu({
         {label}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-72 w-[min(calc(100vw-2rem),22rem)] overflow-y-auto">
-        <DropdownMenuLabel>Invitations</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Invitations</DropdownMenuLabel>
         {list.map((inv) => {
           const accepted = Boolean(inv.accepted_at);
           const expired = !accepted && new Date(inv.expires_at) < new Date();
@@ -136,6 +138,7 @@ function InvitesMenu({
             </div>
           );
         })}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -164,7 +167,8 @@ function MembersMenu({
         {label}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-72 w-[min(calc(100vw-2rem),22rem)] overflow-y-auto">
-        <DropdownMenuLabel>Members</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Members</DropdownMenuLabel>
         {list.map((m) => (
           <div key={m.user_id} className="border-b border-border px-2 py-2 last:border-0">
             <div className="break-all text-xs font-medium">{m.email}</div>
@@ -187,6 +191,7 @@ function MembersMenu({
             </Button>
           </div>
         ))}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

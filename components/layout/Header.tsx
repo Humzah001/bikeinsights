@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Menu } from "lucide-react";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSidebar } from "./DashboardShell";
 
 export function Header() {
@@ -33,6 +34,7 @@ export function Header() {
         <ClientErrorBoundary>
           <NotificationDropdown />
         </ClientErrorBoundary>
+        <ThemeToggle />
         <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Log out">
           <LogOut className="h-4 w-4" />
         </Button>
