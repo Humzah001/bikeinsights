@@ -57,7 +57,7 @@ export function LandingGetStarted({ contactEmail }: { contactEmail: string }) {
               Get started
             </h2>
             <p className="text-muted-foreground mt-3 text-pretty leading-relaxed">
-              A simple path from “interested” to running your shop in the app, no technical steps required on your side.
+              Three quick steps from first hello to running your shop in one clear place.
             </p>
           </div>
           <Tabs value={path} onValueChange={(v) => setPath(v as Path)} className="w-full shrink-0 lg:w-auto">
@@ -74,58 +74,47 @@ export function LandingGetStarted({ contactEmail }: { contactEmail: string }) {
 
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
           {path === "workspace" ? (
-            <StepCard step={1} title="Tell us you are ready">
+            <StepCard step={1} title="Start with one message">
               <p className="text-muted-foreground">
-                Whether you want the free trial or the monthly plan, send one message and we will set up your workspace
-                and send invitations to your team when everything is ready.
+                Trial or monthly plan? Tell us what you need. We set up your workspace and invite your team when it is
+                ready.
               </p>
               <p className="text-muted-foreground mt-3">
-                Write to{" "}
                 <a href={mailto} className="font-medium text-foreground underline-offset-4 hover:underline">
                   {contactEmail}
-                </a>{" "}
-                from the inbox you use for the business.
+                </a>
               </p>
               <Button className="mt-4 w-full sm:w-auto" variant="outline" size="sm" asChild>
-                <a href={mailto}>Open your email app</a>
+                <a href={mailto}>Email us</a>
               </Button>
             </StepCard>
           ) : (
-            <StepCard step={1} title="Open your invitation">
+            <StepCard step={1} title="Your invite is the key">
               <p className="text-muted-foreground">
-                Look for an email from My Bike Insights and tap the button or link inside. That takes you to a secure
-                page just for finishing your account, tied to your shop.
+                Open the My Bike Insights email and tap through. You join your shop in a few taps, no guesswork.
               </p>
               <p className="text-muted-foreground mt-3">
-                Cannot find it? Check spam, or ask whoever invited you to send it again.
+                Misplaced it? Peek at spam or ask your admin for a fresh invite.
               </p>
             </StepCard>
           )}
 
-          <StepCard step={2} title="Finish your account">
+          <StepCard step={2} title="Make it yours">
             <p className="text-muted-foreground">
-              On that page you will enter your name, phone, and a password you choose. When you submit, you are part of
-              the workspace and can sign in anytime.
+              Add your name, phone, and a strong password. One submit and you are on the team. If the link timed out,
+              ask your admin for a fresh invite.
             </p>
-            <p className="text-muted-foreground mt-3">
-              Keep the tab open until you see confirmation; if it expired, ask your admin for a fresh invite.
-            </p>
-            <Button className="mt-4 w-full sm:w-auto" variant="outline" size="sm" asChild>
-              <Link href="/invite/accept">I need the signup screen</Link>
-            </Button>
           </StepCard>
 
-          <StepCard step={3} title="Sign in and get to work">
+          <StepCard step={3} title="Own the day from the dashboard">
             <p className="text-muted-foreground">
-              Next time, open the app with your work email and password. You will land in your dashboard so you can add
-              bikes, rentals, and record payments like you already do at the desk.
+              Open the app with your work email. Bikes, rentals, and rent collection sit in one view built for a busy desk.
             </p>
             <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
-              If a page will not load, try turning off strict content blockers for this site once, or write us and we
-              will sort it out.
+              Page acting up? Ease off strict blockers once or write us, we fix it with you.
             </p>
             <Button className="mt-4 w-full sm:w-auto" size="sm" asChild>
-              <Link href="/login">Sign in to the app</Link>
+              <Link href="/login">Open app</Link>
             </Button>
           </StepCard>
         </div>

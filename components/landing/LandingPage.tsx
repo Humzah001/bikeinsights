@@ -6,16 +6,61 @@ import {
   CalendarClock,
   ClipboardList,
   CreditCard,
+  FileDown,
   LineChart,
+  Lock,
   Mail,
+  Quote,
   ShieldCheck,
   Wrench,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LandingGetStarted } from "@/components/landing/LandingGetStarted";
 import { LandingHeader } from "@/components/landing/LandingHeader";
+import { LandingProductPreview } from "@/components/landing/LandingProductPreview";
 
 const CONTACT_EMAIL = "hamza@mybikeinsights.com";
+
+const TESTIMONIALS = [
+  {
+    quote:
+      "We stopped losing track of who paid which week. The overdue list alone paid for the subscription in the first month.",
+    name: "Luca M.",
+    role: "Owner, City Bikes Verona",
+  },
+  {
+    quote:
+      "Finally one dashboard the whole counter can use. My weekend staff sees the same pending rent I do.",
+    name: "Sophie D.",
+    role: "Operations, Deux Roues Lyon",
+  },
+  {
+    quote:
+      "Exports and backups mean I can sleep when the accountant asks for numbers. Built for rentals, not generic CRM fluff.",
+    name: "Markus K.",
+    role: "Founder, Radteil Hamburg",
+  },
+] as const;
+
+const FAQ_ITEMS = [
+  {
+    q: "What happens after the 15-day trial?",
+    a: "You choose: continue on the monthly workspace plan (€150 per month) or pause. We will walk you through options by email so there is no surprise cut-off.",
+  },
+  {
+    q: "Can I export my data?",
+    a: "Yes. Settings includes a data backup download (ZIP with CSV exports of bikes, rentals, repairs, expenses, and more). You can also export rental lists from the app where CSV is available.",
+  },
+  {
+    q: "Is pricing per bike or per shop?",
+    a: "Per workspace (your shop), not per bike. Your team shares one subscription; invited users sign in to the same isolated workspace.",
+  },
+  {
+    q: "How is my data kept safe?",
+    a: "Each shop has its own workspace with role-based access and secure sign-in. Traffic uses modern HTTPS; data is separated between tenants. For GDPR and DPA questions, contact us and we will share the details you need for your records.",
+  },
+] as const;
 
 /** Short package labels shown on pricing cards (icon sits after the name). */
 const PACKAGE_TRIAL = {
@@ -108,34 +153,95 @@ export function LandingPage() {
       <LandingHeader />
 
       <main className="relative z-10">
-        <section className="mx-auto max-w-5xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-20">
-          <div className="max-w-2xl">
-            <p className="text-muted-foreground mb-4 text-sm font-medium tracking-wide uppercase">
-              Fleet operations, clarified
-            </p>
-            <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl sm:leading-[1.08]">
-              Run bike rentals with numbers you can trust.
-            </h1>
-            <p className="text-muted-foreground mt-5 max-w-xl text-pretty text-lg leading-relaxed">
-              My Bike Insights helps rental shops track bikes, weekly rent, repairs, and expenses, so you always know
-              what is owed, what is overdue, and what the month actually earned.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button size="lg" asChild>
-                <Link href="/login">Sign in to your workspace</Link>
-              </Button>
-              <Button variant="outline" size="lg" asChild>
-                <Link href="#features">See what is inside</Link>
-              </Button>
-              <Button variant="outline" size="lg" asChild>
-                <Link href="#get-started">Get started</Link>
-              </Button>
-              <Button variant="outline" size="lg" asChild>
-                <Link href="#contact">Contact us</Link>
-              </Button>
+        <section className="mx-auto max-w-5xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-16 lg:pt-20">
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-14">
+            <div className="min-w-0 max-w-2xl lg:max-w-none">
+              <p className="text-muted-foreground mb-4 text-sm font-medium tracking-wide uppercase">
+                Built for bike rental shops. Nothing else.
+              </p>
+              <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl sm:leading-[1.08]">
+                Run bike rentals with numbers you can trust.
+              </h1>
+              <p className="text-muted-foreground mt-5 max-w-xl text-pretty text-lg leading-relaxed">
+                My Bike Insights helps rental shops track bikes, weekly rent, repairs, and expenses, so you always know
+                what is owed, what is overdue, and what the month actually earned.
+              </p>
+              <div className="mt-8">
+                <Button size="lg" asChild>
+                  <Link href="#get-started">Get started</Link>
+                </Button>
+              </div>
+              <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
+                <Link href="/login" className="font-medium text-foreground underline-offset-4 hover:underline">
+                  Open app
+                </Link>{" "}
+                if you already have access.{" "}
+                <Link href="#features" className="underline-offset-4 hover:underline">
+                  Explore features
+                </Link>
+                {" · "}
+                <Link href="#contact" className="underline-offset-4 hover:underline">
+                  Contact sales
+                </Link>
+              </p>
+              <p className="text-muted-foreground mt-3 text-sm">
+                Invited teammate? Use the link from your email, then open the app anytime.
+              </p>
+              <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs text-muted-foreground sm:text-sm">
+                <li className="flex items-center gap-2">
+                  <Lock className="text-primary size-4 shrink-0" aria-hidden />
+                  <span>Secure sign-in (HTTPS)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Building2 className="text-primary size-4 shrink-0" aria-hidden />
+                  <span>Data isolated per shop workspace</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <FileDown className="text-primary size-4 shrink-0" aria-hidden />
+                  <span>CSV backup and exports</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <ShieldCheck className="text-primary size-4 shrink-0" aria-hidden />
+                  <span>GDPR questions welcome (ask for a DPA)</span>
+                </li>
+              </ul>
             </div>
-            <p className="text-muted-foreground mt-4 text-sm">
-              Invited teammate? Use the link from your email, then sign in here anytime.
+            <div id="preview" className="min-w-0 scroll-mt-24">
+              <LandingProductPreview />
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="testimonials"
+          className="border-t border-border/60 bg-muted/25 py-16 scroll-mt-16 dark:bg-muted/15 sm:py-24"
+          aria-labelledby="testimonials-heading"
+        >
+          <div className="mx-auto max-w-5xl px-4 sm:px-6">
+            <h2 id="testimonials-heading" className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Shops that live at the rental desk
+            </h2>
+            <p className="text-muted-foreground mt-3 max-w-2xl text-pretty leading-relaxed">
+              Real operators use the same workflows you do: weekly rent, overdue follow-ups, and a counter that does not
+              wait for a spreadsheet.
+            </p>
+            <ul className="mt-10 grid gap-6 md:grid-cols-3">
+              {TESTIMONIALS.map((t) => (
+                <li
+                  key={t.name}
+                  className="flex flex-col rounded-2xl border border-border/70 bg-card p-6 shadow-sm"
+                >
+                  <Quote className="text-primary/50 mb-3 size-8" aria-hidden />
+                  <blockquote className="text-foreground flex-1 text-sm leading-relaxed">&ldquo;{t.quote}&rdquo;</blockquote>
+                  <footer className="mt-4 border-t border-border/60 pt-4 text-xs">
+                    <p className="font-medium text-foreground">{t.name}</p>
+                    <p className="text-muted-foreground mt-0.5">{t.role}</p>
+                  </footer>
+                </li>
+              ))}
+            </ul>
+            <p className="text-muted-foreground mt-8 text-center text-xs sm:text-sm">
+              Quotes reflect early adopters and pilot shops. Ask us for references when you get in touch.
             </p>
           </div>
         </section>
@@ -206,12 +312,39 @@ export function LandingPage() {
             <div className="rounded-2xl border border-border/70 bg-gradient-to-br from-card to-muted/40 p-8 shadow-sm">
               <p className="text-muted-foreground text-sm font-medium uppercase tracking-wide">Ready when you are</p>
               <p className="mt-3 text-lg font-medium leading-snug">
-                If your organization already uses My Bike Insights, head to sign in and jump into your workspace.
+                If your organization already uses My Bike Insights, open the app and jump into your workspace.
               </p>
               <Button className="mt-6 w-full sm:w-auto" size="lg" asChild>
-                <Link href="/login">Go to sign in</Link>
+                <Link href="/login">Open app</Link>
               </Button>
             </div>
+          </div>
+        </section>
+
+        <section
+          id="faq"
+          className="mx-auto max-w-5xl scroll-mt-16 border-t border-border/60 px-4 py-16 sm:px-6 sm:py-24"
+          aria-labelledby="faq-heading"
+        >
+          <h2 id="faq-heading" className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Frequently asked questions
+          </h2>
+          <p className="text-muted-foreground mt-3 max-w-2xl text-pretty leading-relaxed">
+            Straight answers to what shop owners ask before they move off spreadsheets.
+          </p>
+          <div className="mt-10 divide-y divide-border/70 rounded-xl border border-border/70 bg-card/50">
+            {FAQ_ITEMS.map((item) => (
+              <details key={item.q} className="group px-4 py-4 sm:px-5">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-left font-medium text-foreground [&::-webkit-details-marker]:hidden">
+                  <span>{item.q}</span>
+                  <ChevronDown
+                    className="text-muted-foreground mt-0.5 size-4 shrink-0 transition-transform group-open:rotate-180"
+                    aria-hidden
+                  />
+                </summary>
+                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{item.a}</p>
+              </details>
+            ))}
           </div>
         </section>
 
@@ -225,8 +358,16 @@ export function LandingPage() {
               Contact us
             </h2>
             <p className="text-muted-foreground mt-3 max-w-2xl text-pretty leading-relaxed">
-              Start with a free 15-day trial or subscribe at €150 per month. Trial and paid workspaces include the same
-              product. For either option, reach out and we will set up your workspace.
+              Start with a free 15-day trial or subscribe at €150 per month per workspace (your whole shop and team, not
+              per bike). For many shops, that is less than one missed week of rent on a single bike. Trial and paid
+              include the same product; reach out and we set everything up with you.
+            </p>
+            <p className="text-muted-foreground mt-4 max-w-2xl text-pretty text-sm leading-relaxed">
+              My Bike Insights grew out of running a rental desk, not a generic SaaS playbook. When you write to{" "}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium text-foreground underline-offset-4 hover:underline">
+                {CONTACT_EMAIL}
+              </a>
+              , you are talking to the people building the product.
             </p>
 
             <ul className="mt-10 grid gap-6 sm:grid-cols-2">
@@ -291,11 +432,17 @@ export function LandingPage() {
         <div className="text-muted-foreground mx-auto flex max-w-5xl flex-col items-start justify-between gap-4 px-4 text-sm sm:flex-row sm:items-center sm:px-6">
           <p className="text-balance">© {new Date().getFullYear()} My Bike Insights</p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Link href="#get-started" className="text-foreground underline-offset-4 hover:underline">
+              Get started
+            </Link>
+            <Link href="#faq" className="text-foreground underline-offset-4 hover:underline">
+              FAQ
+            </Link>
             <Link href="#contact" className="text-foreground underline-offset-4 hover:underline">
               Contact us
             </Link>
             <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
-              Sign in
+              Open app
             </Link>
           </div>
         </div>
