@@ -34,6 +34,8 @@ import { formatCurrency, getWeeksPaid } from "@/lib/calculations";
 import { DashboardMonthSelect } from "@/components/dashboard/DashboardMonthSelect";
 import { AlertCircle, AlertTriangle, Info, Phone } from "lucide-react";
 import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
+import { useIsMobileViewport } from "@/hooks/use-is-mobile-viewport";
+import { verticalBarCategoryAxisWidth } from "@/lib/recharts-vertical-bar";
 
 const STATUS_COLORS = {
   available: "bg-green-500/20 text-green-600 dark:text-green-400",
@@ -52,6 +54,25 @@ const STATUS_COLORS = {
 };
 
 const PIE_COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#6b7280", "#ef4444"];
+
+function truncateAxisLabel(value: string, maxLen = 14): string {
+  const s = String(value);
+  if (s.length <= maxLen) return s;
+  return `${s.slice(0, Math.max(0, maxLen - 1))}…`;
+}
+
+const CARTESIAN_MARGIN = { top: 8, right: 8, left: 4, bottom: 28 };
+const CARTESIAN_MARGIN_NO_LEGEND = { top: 8, right: 8, left: 4, bottom: 8 };
+/** Vertical bar charts: no extra left margin — label width comes from YAxis only (avoids a wide empty gutter on phones). */
+const VERTICAL_BAR_MARGIN = { top: 4, right: 10, bottom: 4, left: 0 };
+
+function chartLegendProps() {
+  return {
+    verticalAlign: "bottom" as const,
+    align: "center" as const,
+    wrapperStyle: { paddingTop: 4, fontSize: 12 },
+  };
+}
 
 function workspaceDashboardTitle(businessName: string, ownerName: string, workspaceName: string): string {
   const raw = businessName.trim() || ownerName.trim() || workspaceName.trim();
@@ -216,6 +237,7 @@ export function DashboardClient({
   pieChartTitles,
 }: DashboardClientProps) {
   const { currencySymbol, businessName, ownerName } = useTenantPreferences();
+  const isMobileChart = useIsMobileViewport();
   const sym = currencySymbol || "£";
   const dashboardHeading = workspaceDashboardTitle(businessName, ownerName, workspaceName);
 
@@ -354,10 +376,10 @@ export function DashboardClient({
                 periodLabel={`Combined · ${weekRangeLabel}`}
                 currencySymbol={sym}
               />
-              <div className="h-[260px] w-full min-w-0">
+              <div className="mx-auto h-[260px] w-full min-w-0 max-w-full">
                 {weeklyData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={weeklyData}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <ComposedChart data={weeklyData} margin={CARTESIAN_MARGIN}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="week" className="text-xs" tick={{ fontSize: 10 }} />
                       <YAxis className="text-xs" tickFormatter={(v) => `${sym}${v}`} width={48} />
@@ -367,7 +389,7 @@ export function DashboardClient({
                           name === "revenue" ? "Rent" : name === "expenses" ? "Costs" : "Net profit",
                         ]}
                       />
-                      <Legend />
+                      <Legend {...chartLegendProps()} />
                       <Bar dataKey="revenue" fill="#22c55e" name="Collected rent" radius={[3, 3, 0, 0]} maxBarSize={28} />
                       <Bar dataKey="expenses" fill="#fca5a5" name="Expenses" radius={[3, 3, 0, 0]} maxBarSize={28} />
                       <Line
@@ -397,9 +419,9 @@ export function DashboardClient({
                 periodLabel={monthRangeLabel}
                 currencySymbol={sym}
               />
-              <div className="h-[260px] w-full min-w-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={monthlyData}>
+              <div className="mx-auto h-[260px] w-full min-w-0 max-w-full">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <ComposedChart data={monthlyData} margin={CARTESIAN_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="month" className="text-xs" />
                     <YAxis className="text-xs" tickFormatter={(v) => `${sym}${v}`} width={48} />
@@ -409,7 +431,7 @@ export function DashboardClient({
                         name === "revenue" ? "Rent" : name === "expenses" ? "Costs" : "Net profit",
                       ]}
                     />
-                    <Legend />
+                    <Legend {...chartLegendProps()} />
                     <Line type="monotone" dataKey="revenue" stroke="#22c55e" name="Collected rent" strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="expenses" stroke="#ef4444" name="Expenses" strokeWidth={2} dot={false} />
                     <Line
@@ -434,9 +456,9 @@ export function DashboardClient({
                 periodLabel={`Calendar year ${yearSummaryLabel}`}
                 currencySymbol={sym}
               />
-              <div className="h-[260px] w-full min-w-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={yearlyData}>
+              <div className="mx-auto h-[260px] w-full min-w-0 max-w-full">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <ComposedChart data={yearlyData} margin={CARTESIAN_MARGIN}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="year" className="text-xs" />
                     <YAxis className="text-xs" tickFormatter={(v) => `${sym}${v}`} width={52} />
@@ -446,7 +468,7 @@ export function DashboardClient({
                         name === "revenue" ? "Rent" : name === "expenses" ? "Costs" : "Net profit",
                       ]}
                     />
-                    <Legend />
+                    <Legend {...chartLegendProps()} />
                     <Bar dataKey="revenue" fill="#22c55e" name="Collected rent" radius={[4, 4, 0, 0]} maxBarSize={36} />
                     <Bar dataKey="expenses" fill="#fca5a5" name="Expenses" radius={[4, 4, 0, 0]} maxBarSize={36} />
                     <Line
@@ -475,26 +497,26 @@ export function DashboardClient({
             )}
           </CardHeader>
           <CardContent>
-            <div className="h-[180px]">
+            <div className="mx-auto h-[200px] w-full min-w-0 max-w-full">
               {bikeStatusPie.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
                     <Pie
                       data={bikeStatusPie}
                       cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
+                      cy="48%"
+                      innerRadius={44}
+                      outerRadius={62}
                       paddingAngle={2}
                       dataKey="value"
                       nameKey="name"
-                      label={({ name, value }) => `${name}: ${value}`}
                     >
                       {bikeStatusPie.map((entry, i) => (
                         <Cell key={i} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(v: number | undefined) => [v != null ? v : "", ""]} />
+                    <Legend {...chartLegendProps()} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -508,16 +530,16 @@ export function DashboardClient({
             <CardTitle className="text-base leading-snug">{pieChartTitles.payment}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[180px]">
+            <div className="mx-auto h-[200px] w-full min-w-0 max-w-full">
               {paymentPie.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
                     <Pie
                       data={paymentPie}
                       cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
+                      cy="48%"
+                      innerRadius={44}
+                      outerRadius={62}
                       paddingAngle={2}
                       dataKey="value"
                       nameKey="name"
@@ -527,6 +549,7 @@ export function DashboardClient({
                       ))}
                     </Pie>
                     <Tooltip formatter={(v: number | undefined) => [v != null ? v : "", ""]} />
+                    <Legend {...chartLegendProps()} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -540,16 +563,16 @@ export function DashboardClient({
             <CardTitle className="text-base leading-snug">{pieChartTitles.expense}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[180px]">
+            <div className="mx-auto h-[200px] w-full min-w-0 max-w-full">
               {expensePie.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
                     <Pie
                       data={expensePie}
                       cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
+                      cy="48%"
+                      innerRadius={44}
+                      outerRadius={62}
                       paddingAngle={2}
                       dataKey="value"
                       nameKey="name"
@@ -559,6 +582,7 @@ export function DashboardClient({
                       ))}
                     </Pie>
                     <Tooltip formatter={(v: number | undefined) => [v != null ? formatCurrency(v, sym) : "", ""]} />
+                    <Legend {...chartLegendProps()} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -576,12 +600,25 @@ export function DashboardClient({
             <CardDescription>Rent collected this month by weekly due dates</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueByBike} layout="vertical" margin={{ left: 80 }}>
+            <div className="h-[220px] w-full min-w-0">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <BarChart data={revenueByBike} layout="vertical" margin={VERTICAL_BAR_MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis type="number" tickFormatter={(v) => `${sym}${v}`} />
-                  <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={verticalBarCategoryAxisWidth(
+                      revenueByBike.map((b) => b.name),
+                      isMobileChart
+                    )}
+                    tick={{ fontSize: 10, textAnchor: "end" }}
+                    interval={0}
+                    tickFormatter={(v: string) => {
+                      const s = String(v ?? "").trim() || "—";
+                      return truncateAxisLabel(s, isMobileChart ? 18 : 22);
+                    }}
+                  />
                   <Tooltip formatter={(v: number | undefined) => [v != null ? formatCurrency(v, sym) : "", "Collected rent"]} />
                   <Bar dataKey="revenue" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                 </BarChart>
