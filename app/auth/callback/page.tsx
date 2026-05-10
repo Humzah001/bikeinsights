@@ -3,10 +3,12 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
+import { isPlausibleInviteRawToken } from "@/lib/invite-token-format";
 
 /**
  * Stable URL for Supabase Auth redirects after invite / magic links.
- * Always allowlist this exact path (no query) in Supabase → Authentication → Redirect URLs.
+ * Redirect URLs must allowlist this path — use a wildcard so query strings work, e.g.
+ * https://YOUR_DOMAIN/auth/callback** (Supabase Dashboard → Authentication → URL Configuration).
  */
 function AuthCallbackInner() {
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +31,17 @@ function AuthCallbackInner() {
         const search = window.location.search;
         const hash = window.location.hash;
 
+        const qp = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+        const tokenFromQuery = qp.get("invite_token")?.trim() ?? "";
         const meta = session?.user?.user_metadata as Record<string, unknown> | undefined;
-        const appToken = typeof meta?.app_invite_token === "string" ? meta.app_invite_token.trim() : "";
+        const tokenFromMeta = typeof meta?.app_invite_token === "string" ? meta.app_invite_token.trim() : "";
+
+        const appToken =
+          tokenFromQuery && isPlausibleInviteRawToken(tokenFromQuery)
+            ? tokenFromQuery
+            : tokenFromMeta && isPlausibleInviteRawToken(tokenFromMeta)
+              ? tokenFromMeta
+              : "";
 
         const hasUrlAuth =
           Boolean(session?.access_token) || hash.includes("access_token") || search.includes("code=");
@@ -42,14 +53,16 @@ function AuthCallbackInner() {
         if (!appToken) {
           doneRef.current = true;
           setError(
-            "Your invite is missing workspace data (old invite). Ask an admin to send a new invite from Platform admin."
+            "Could not read your workspace invite link (missing token). Ask an admin to send a new invite from Platform admin, and confirm Supabase Redirect URLs include https://your-domain/auth/callback with a wildcard so query parameters are allowed."
           );
           return;
         }
 
         doneRef.current = true;
+        qp.delete("invite_token");
+        const restQuery = qp.toString();
         let dest = `${origin}/invite/accept?token=${encodeURIComponent(appToken)}`;
-        if (search.length > 1) dest += `&${search.slice(1)}`;
+        if (restQuery) dest += `&${restQuery}`;
         dest += hash;
         window.location.replace(dest);
       });

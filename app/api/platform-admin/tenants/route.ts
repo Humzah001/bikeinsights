@@ -31,7 +31,7 @@ function inviteErrorHint(message: string): string | undefined {
     return "Mail failed at Supabase: Authentication → set up custom SMTP (recommended on Pro/production). Check Email Templates for invalid HTML/Go syntax. Dashboard → Logs → Postgres & Edge Functions for Auth mail errors.";
   }
   if (m.includes("redirect") || m.includes("redirect_to")) {
-    return "Supabase → Authentication → URL Configuration → Redirect URLs must include /auth/callback on each origin (e.g. http://localhost:3001/auth/callback and https://your-domain/auth/callback). Wildcards like http://localhost:3001/** also work.";
+    return "Supabase → Authentication → URL Configuration → Redirect URLs must include /auth/callback with a wildcard so invite_token query params work (e.g. https://YOUR_DOMAIN/auth/callback**). Include localhost and production origins.";
   }
   if (m.includes("already registered") || m.includes("already been registered") || m.includes("user already exists")) {
     return "Authentication → Users: remove this email or use another address.";
@@ -121,7 +121,8 @@ export async function POST(request: NextRequest) {
 
     const appOrigin = resolveAppOrigin(request);
     const inviteLink = `${appOrigin}/invite/accept?token=${encodeURIComponent(rawToken)}`;
-    const supabaseAuthRedirect = `${appOrigin}/auth/callback`;
+    /** Query carries token so /auth/callback works even when Supabase omits user_metadata (e.g. pre-existing Auth users). Allowlist e.g. https://YOUR_DOMAIN/auth/callback** */
+    const supabaseAuthRedirect = `${appOrigin}/auth/callback?invite_token=${encodeURIComponent(rawToken)}`;
 
     let trial_summary = "";
     if (tenant.billing_status === "trial" && tenant.trial_ends_at) {
