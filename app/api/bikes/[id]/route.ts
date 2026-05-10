@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as db from "@/lib/db";
 import type { Bike } from "@/lib/types";
+import { requireTenantApi } from "@/lib/api-session";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
-  const bike = await db.getBikeById(id);
+  const bike = await db.getBikeById(auth.tenantId, id);
   if (!bike) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(bike);
 }
@@ -16,8 +19,10 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
-  const bike = await db.getBikeById(id);
+  const bike = await db.getBikeById(auth.tenantId, id);
   if (!bike) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const body = await request.json();
   const updates: Partial<Bike> = {};
@@ -32,7 +37,7 @@ export async function PATCH(
   if (body.weekly_rate != null) updates.weekly_rate = String(body.weekly_rate);
   if (body.image_filename != null) updates.image_filename = body.image_filename;
   if (body.notes != null) updates.notes = body.notes;
-  const updated = await db.updateBike(id, updates);
+  const updated = await db.updateBike(auth.tenantId, id, updates);
   return NextResponse.json(updated);
 }
 
@@ -40,9 +45,26 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
-  const bike = await db.getBikeById(id);
+  const bike = await db.getBikeById(auth.tenantId, id);
   if (!bike) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  await db.deleteBike(id);
+  try {
+    await db.deleteBike(auth.tenantId, id);
+  } catch (e: unknown) {
+    const code =
+      typeof e === "object" && e !== null && "code" in e ? String((e as { code?: string }).code) : "";
+    if (code === "23503") {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot delete this bike while rentals, repairs, or expenses still reference it. Remove or reassign those records first.",
+        },
+        { status: 409 }
+      );
+    }
+    throw e;
+  }
   return NextResponse.json({ ok: true });
 }

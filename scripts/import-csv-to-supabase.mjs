@@ -21,6 +21,8 @@ import { createClient } from "@supabase/supabase-js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
+/** After SaaS migration 007 — workspace id rows belong to (override with IMPORT_TENANT_ID). */
+const IMPORT_TENANT_ID = process.env.IMPORT_TENANT_ID || "tenant-buildit4me";
 
 function loadEnvLocal() {
   const envPath = path.join(ROOT, ".env.local");
@@ -72,6 +74,7 @@ function row(table, raw) {
         created_at: str(raw.created_at) || undefined,
         last_latitude: raw.last_latitude != null && raw.last_latitude !== "" ? str(raw.last_latitude) : null,
         last_longitude: raw.last_longitude != null && raw.last_longitude !== "" ? str(raw.last_longitude) : null,
+        tenant_id: IMPORT_TENANT_ID,
       };
     case "rentals":
       return {
@@ -94,6 +97,7 @@ function row(table, raw) {
         rent_collection_date: str(raw.rent_collection_date) || "",
         notes: str(raw.notes),
         created_at: str(raw.created_at) || undefined,
+        tenant_id: IMPORT_TENANT_ID,
       };
     case "repairs":
       return {
@@ -107,11 +111,12 @@ function row(table, raw) {
         status: str(raw.status) || "pending",
         notes: str(raw.notes),
         created_at: str(raw.created_at) || undefined,
+        tenant_id: IMPORT_TENANT_ID,
       };
     case "expenses":
       return {
         id: str(raw.id) || undefined,
-        bike_id: str(raw.bike_id),
+        bike_id: str(raw.bike_id) === "" ? null : str(raw.bike_id),
         bike_name: str(raw.bike_name),
         category: str(raw.category) || "other",
         description: str(raw.description),
@@ -120,6 +125,7 @@ function row(table, raw) {
         receipt_filename: str(raw.receipt_filename),
         notes: str(raw.notes),
         created_at: str(raw.created_at) || undefined,
+        tenant_id: IMPORT_TENANT_ID,
       };
     case "notifications":
       return {
@@ -133,6 +139,7 @@ function row(table, raw) {
         message: str(raw.message),
         is_read: str(raw.is_read) || "false",
         created_at: str(raw.created_at) || undefined,
+        tenant_id: IMPORT_TENANT_ID,
       };
     default:
       return raw;

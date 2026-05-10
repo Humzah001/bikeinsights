@@ -4,14 +4,16 @@ import { BikeStatusBadge } from "./BikeStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Bike } from "@/lib/types";
+import { formatCurrency } from "@/lib/calculations";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 
 interface BikeCardProps {
   bike: Bike;
   currentRenter?: string | null;
+  currencySymbol?: string;
 }
 
-export function BikeCard({ bike, currentRenter }: BikeCardProps) {
+export function BikeCard({ bike, currentRenter, currencySymbol = "£" }: BikeCardProps) {
   const imageSrc = bike.image_filename
     ? `/uploads/bikes/${bike.image_filename}`
     : null;
@@ -51,7 +53,7 @@ export function BikeCard({ bike, currentRenter }: BikeCardProps) {
         </div>
         <div className="mt-3 flex items-center justify-between">
           <div>
-            <span className="text-lg font-semibold">£{bike.weekly_rate}</span>
+            <span className="text-lg font-semibold">{formatCurrency(Number(bike.weekly_rate || 0), currencySymbol)}</span>
             <span className="text-sm text-muted-foreground">/week</span>
             {currentRenter && (
               <p className="mt-0.5 text-xs text-muted-foreground">

@@ -23,6 +23,8 @@ Create a `.env.local` file (and set the same in Vercel for production):
 - **Supabase (required for data):**  
   `NEXT_PUBLIC_SUPABASE_URL` – your Supabase project URL  
   `SUPABASE_SERVICE_ROLE_KEY` – service role key (Project → Settings → API)  
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` – anon/public key (needed for workspace invites and Supabase-backed login)  
+  Under **Authentication → URL Configuration**, add redirect URLs such as `http://localhost:3000/invite/accept` and your production `/invite/accept` URL (wildcards like `http://localhost:3000/**` work). Platform-admin workspace invites use **`auth.admin.inviteUserByEmail`** so mail is delivered by Supabase, not Resend.  
   Run the table script in `supabase/migrations/001_initial_tables.sql` in the Supabase SQL Editor before using the app.
 - **Admin portal:**  
   `ADMIN_PASSWORD` – password for the dashboard login.

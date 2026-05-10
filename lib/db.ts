@@ -17,67 +17,94 @@ export function isRentalPaymentsSetupError(e: unknown): boolean {
   return false;
 }
 
-export async function getBikes(): Promise<Bike[]> {
-  const { data, error } = await getSupabase().from("bikes").select("*").order("created_at", { ascending: false });
+export async function getBikes(tenantId: string): Promise<Bike[]> {
+  const { data, error } = await getSupabase()
+    .from("bikes")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(rowToBike);
 }
 
-export async function getBikeById(id: string): Promise<Bike | null> {
-  const { data, error } = await getSupabase().from("bikes").select("*").eq("id", id).single();
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw error;
-  }
-  return data ? rowToBike(data) : null;
-}
-
-export async function createBike(row: Bike): Promise<Bike> {
-  const { data, error } = await getSupabase().from("bikes").insert(bikeToRow(row)).select().single();
+export async function getBikeById(tenantId: string, id: string): Promise<Bike | null> {
+  const { data, error } = await getSupabase().from("bikes").select("*").eq("tenant_id", tenantId).eq("id", id).maybeSingle();
   if (error) throw error;
-  return rowToBike(data);
+  return data ? rowToBike(data as Record<string, unknown>) : null;
 }
 
-export async function updateBike(id: string, updates: Partial<Bike>): Promise<Bike> {
-  const { data, error } = await getSupabase().from("bikes").update(bikeToRow(updates as Bike)).eq("id", id).select().single();
+export async function createBike(tenantId: string, row: Bike): Promise<Bike> {
+  const { data, error } = await getSupabase()
+    .from("bikes")
+    .insert({ ...bikeToRow(row), tenant_id: tenantId })
+    .select()
+    .single();
   if (error) throw error;
-  return rowToBike(data);
+  return rowToBike(data as Record<string, unknown>);
 }
 
-export async function deleteBike(id: string): Promise<void> {
-  const { error } = await getSupabase().from("bikes").delete().eq("id", id);
+export async function updateBike(tenantId: string, id: string, updates: Partial<Bike>): Promise<Bike> {
+  const { data, error } = await getSupabase()
+    .from("bikes")
+    .update(bikeToRow(updates as Bike))
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToBike(data as Record<string, unknown>);
+}
+
+export async function deleteBike(tenantId: string, id: string): Promise<void> {
+  const { error } = await getSupabase().from("bikes").delete().eq("tenant_id", tenantId).eq("id", id);
   if (error) throw error;
 }
 
-export async function getRentals(): Promise<Rental[]> {
-  const { data, error } = await getSupabase().from("rentals").select("*").order("created_at", { ascending: false });
+export async function getRentals(tenantId: string): Promise<Rental[]> {
+  const { data, error } = await getSupabase()
+    .from("rentals")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(rowToRental);
 }
 
-export async function getRentalById(id: string): Promise<Rental | null> {
-  const { data, error } = await getSupabase().from("rentals").select("*").eq("id", id).single();
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw error;
-  }
-  return data ? rowToRental(data) : null;
-}
-
-export async function createRental(row: Rental): Promise<Rental> {
-  const { data, error } = await getSupabase().from("rentals").insert(rentalToRow(row)).select().single();
+export async function getRentalById(tenantId: string, id: string): Promise<Rental | null> {
+  const { data, error } = await getSupabase()
+    .from("rentals")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .maybeSingle();
   if (error) throw error;
-  return rowToRental(data);
+  return data ? rowToRental(data as Record<string, unknown>) : null;
 }
 
-export async function updateRental(id: string, updates: Partial<Rental>): Promise<Rental> {
-  const { data, error } = await getSupabase().from("rentals").update(rentalToRow(updates as Rental)).eq("id", id).select().single();
+export async function createRental(tenantId: string, row: Rental): Promise<Rental> {
+  const { data, error } = await getSupabase()
+    .from("rentals")
+    .insert({ ...rentalToRow(row), tenant_id: tenantId })
+    .select()
+    .single();
   if (error) throw error;
-  return rowToRental(data);
+  return rowToRental(data as Record<string, unknown>);
 }
 
-export async function deleteRental(id: string): Promise<void> {
-  const { error } = await getSupabase().from("rentals").delete().eq("id", id);
+export async function updateRental(tenantId: string, id: string, updates: Partial<Rental>): Promise<Rental> {
+  const { data, error } = await getSupabase()
+    .from("rentals")
+    .update(rentalToRow(updates as Rental))
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToRental(data as Record<string, unknown>);
+}
+
+export async function deleteRental(tenantId: string, id: string): Promise<void> {
+  const { error } = await getSupabase().from("rentals").delete().eq("tenant_id", tenantId).eq("id", id);
   if (error) throw error;
 }
 
@@ -96,11 +123,13 @@ function rowToRentalPayment(r: Record<string, unknown>): RentalPayment {
 }
 
 export async function createRentalPayment(
+  tenantId: string,
   row: Omit<RentalPayment, "created_at" | "id"> & { id?: string }
 ): Promise<RentalPayment> {
   const id = row.id ?? `pay-${uuidv4().slice(0, 12)}`;
   const payload = {
     id,
+    tenant_id: tenantId,
     rental_id: row.rental_id,
     amount: row.amount,
     due_on: row.due_on?.trim() || null,
@@ -120,10 +149,11 @@ export async function createRentalPayment(
   return rowToRentalPayment(data as Record<string, unknown>);
 }
 
-export async function getAllRentalPayments(): Promise<RentalPayment[]> {
+export async function getAllRentalPayments(tenantId: string): Promise<RentalPayment[]> {
   const { data, error } = await getSupabase()
     .from("rental_payments")
     .select("*")
+    .eq("tenant_id", tenantId)
     .order("collected_on", { ascending: false })
     .order("created_at", { ascending: false });
   if (error) {
@@ -138,101 +168,143 @@ export async function getAllRentalPayments(): Promise<RentalPayment[]> {
   return (data ?? []).map((r) => rowToRentalPayment(r as Record<string, unknown>));
 }
 
-export async function getRepairs(): Promise<Repair[]> {
-  const { data, error } = await getSupabase().from("repairs").select("*").order("created_at", { ascending: false });
+export async function getRepairs(tenantId: string): Promise<Repair[]> {
+  const { data, error } = await getSupabase()
+    .from("repairs")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(rowToRepair);
 }
 
-export async function getRepairById(id: string): Promise<Repair | null> {
-  const { data, error } = await getSupabase().from("repairs").select("*").eq("id", id).single();
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw error;
-  }
-  return data ? rowToRepair(data) : null;
-}
-
-export async function createRepair(row: Repair): Promise<Repair> {
-  const { data, error } = await getSupabase().from("repairs").insert(repairToRow(row)).select().single();
+export async function getRepairById(tenantId: string, id: string): Promise<Repair | null> {
+  const { data, error } = await getSupabase()
+    .from("repairs")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .maybeSingle();
   if (error) throw error;
-  return rowToRepair(data);
+  return data ? rowToRepair(data as Record<string, unknown>) : null;
 }
 
-export async function updateRepair(id: string, updates: Partial<Repair>): Promise<Repair> {
-  const { data, error } = await getSupabase().from("repairs").update(repairToRow(updates as Repair)).eq("id", id).select().single();
+export async function createRepair(tenantId: string, row: Repair): Promise<Repair> {
+  const { data, error } = await getSupabase()
+    .from("repairs")
+    .insert({ ...repairToRow(row), tenant_id: tenantId })
+    .select()
+    .single();
   if (error) throw error;
-  return rowToRepair(data);
+  return rowToRepair(data as Record<string, unknown>);
 }
 
-export async function deleteRepair(id: string): Promise<void> {
-  const { error } = await getSupabase().from("repairs").delete().eq("id", id);
+export async function updateRepair(tenantId: string, id: string, updates: Partial<Repair>): Promise<Repair> {
+  const { data, error } = await getSupabase()
+    .from("repairs")
+    .update(repairToRow(updates as Repair))
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToRepair(data as Record<string, unknown>);
+}
+
+export async function deleteRepair(tenantId: string, id: string): Promise<void> {
+  const { error } = await getSupabase().from("repairs").delete().eq("tenant_id", tenantId).eq("id", id);
   if (error) throw error;
 }
 
-export async function getExpenses(): Promise<Expense[]> {
-  const { data, error } = await getSupabase().from("expenses").select("*").order("created_at", { ascending: false });
+export async function getExpenses(tenantId: string): Promise<Expense[]> {
+  const { data, error } = await getSupabase()
+    .from("expenses")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(rowToExpense);
 }
 
-export async function getExpenseById(id: string): Promise<Expense | null> {
-  const { data, error } = await getSupabase().from("expenses").select("*").eq("id", id).single();
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw error;
-  }
-  return data ? rowToExpense(data) : null;
-}
-
-export async function createExpense(row: Expense): Promise<Expense> {
-  const { data, error } = await getSupabase().from("expenses").insert(expenseToRow(row)).select().single();
+export async function getExpenseById(tenantId: string, id: string): Promise<Expense | null> {
+  const { data, error } = await getSupabase()
+    .from("expenses")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .maybeSingle();
   if (error) throw error;
-  return rowToExpense(data);
+  return data ? rowToExpense(data as Record<string, unknown>) : null;
 }
 
-export async function deleteExpense(id: string): Promise<void> {
-  const { error } = await getSupabase().from("expenses").delete().eq("id", id);
+export async function createExpense(tenantId: string, row: Expense): Promise<Expense> {
+  const { data, error } = await getSupabase()
+    .from("expenses")
+    .insert({ ...expenseToRow(row), tenant_id: tenantId })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToExpense(data as Record<string, unknown>);
+}
+
+export async function deleteExpense(tenantId: string, id: string): Promise<void> {
+  const { error } = await getSupabase().from("expenses").delete().eq("tenant_id", tenantId).eq("id", id);
   if (error) throw error;
 }
 
-export async function getNotifications(): Promise<Notification[]> {
-  const { data, error } = await getSupabase().from("notifications").select("*").order("created_at", { ascending: false });
+export async function getNotifications(tenantId: string): Promise<Notification[]> {
+  const { data, error } = await getSupabase()
+    .from("notifications")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(rowToNotification);
 }
 
-export async function createNotification(row: Notification): Promise<Notification> {
-  const { data, error } = await getSupabase().from("notifications").insert(notificationToRow(row)).select().single();
+export async function createNotification(tenantId: string, row: Notification): Promise<Notification> {
+  const { data, error } = await getSupabase()
+    .from("notifications")
+    .insert({ ...notificationToRow(row), tenant_id: tenantId })
+    .select()
+    .single();
   if (error) throw error;
-  return rowToNotification(data);
+  return rowToNotification(data as Record<string, unknown>);
 }
 
-export async function updateNotification(id: string, updates: Partial<Notification>): Promise<Notification> {
-  const { data, error } = await getSupabase().from("notifications").update(notificationToRow(updates as Notification)).eq("id", id).select().single();
+export async function updateNotification(tenantId: string, id: string, updates: Partial<Notification>): Promise<Notification> {
+  const { data, error } = await getSupabase()
+    .from("notifications")
+    .update(notificationToRow(updates as Notification))
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .select()
+    .single();
   if (error) throw error;
-  return rowToNotification(data);
+  return rowToNotification(data as Record<string, unknown>);
 }
 
-/** Update all notifications for a given rental (e.g. mark as read when rental completes). */
-export async function updateNotificationsByRentalId(rentalId: string, updates: Partial<Notification>): Promise<void> {
+export async function updateNotificationsByRentalId(
+  tenantId: string,
+  rentalId: string,
+  updates: Partial<Notification>
+): Promise<void> {
   const row = notificationToRow(updates as Notification);
   if (Object.keys(row).length === 0) return;
-  const { error } = await getSupabase().from("notifications").update(row).eq("rental_id", rentalId);
+  const { error } = await getSupabase().from("notifications").update(row).eq("tenant_id", tenantId).eq("rental_id", rentalId);
   if (error) throw error;
 }
 
-export async function deleteNotificationsByRentalId(rentalId: string): Promise<void> {
-  const { error } = await getSupabase().from("notifications").delete().eq("rental_id", rentalId);
+export async function deleteNotificationsByRentalId(tenantId: string, rentalId: string): Promise<void> {
+  const { error } = await getSupabase().from("notifications").delete().eq("tenant_id", tenantId).eq("rental_id", rentalId);
   if (error) throw error;
 }
 
-export async function deleteNotification(id: string): Promise<void> {
-  const { error } = await getSupabase().from("notifications").delete().eq("id", id);
+export async function deleteNotification(tenantId: string, id: string): Promise<void> {
+  const { error } = await getSupabase().from("notifications").delete().eq("tenant_id", tenantId).eq("id", id);
   if (error) throw error;
 }
 
-// Helpers: Supabase returns snake_case; our types use snake_case so we just ensure defaults and types
 function rowToBike(r: Record<string, unknown>): Bike {
   return {
     id: String(r.id ?? ""),
@@ -362,7 +434,9 @@ function rowToExpense(r: Record<string, unknown>): Expense {
 function expenseToRow(b: Partial<Expense>): Record<string, unknown> {
   const row: Record<string, unknown> = {};
   if (b.id != null) row.id = b.id;
-  if (b.bike_id != null) row.bike_id = b.bike_id;
+  if (b.bike_id !== undefined) {
+    row.bike_id = b.bike_id.trim() === "" ? null : b.bike_id;
+  }
   if (b.bike_name != null) row.bike_name = b.bike_name;
   if (b.category != null) row.category = b.category;
   if (b.description != null) row.description = b.description;

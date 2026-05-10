@@ -3,15 +3,17 @@ import type { Rental, Repair, Expense, Bike } from "@/lib/types";
 import { format, parseISO, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { getCollectedRentAttributedToRange, rentalCountsTowardRevenue } from "@/lib/calculations";
 import { AnalyticsClient } from "./AnalyticsClient";
+import { getTenantAuthOrRedirect } from "@/lib/auth-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage() {
+  const { tenantId } = await getTenantAuthOrRedirect();
   const [rentals, repairs, expenses, bikes] = await Promise.all([
-    db.getRentals(),
-    db.getRepairs(),
-    db.getExpenses(),
-    db.getBikes(),
+    db.getRentals(tenantId),
+    db.getRepairs(tenantId),
+    db.getExpenses(tenantId),
+    db.getBikes(tenantId),
   ]);
 
   const now = new Date();

@@ -16,6 +16,7 @@ import {
   ChevronRight,
   LayoutDashboard,
   AlertCircle,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ showPlatformAdmin }: { showPlatformAdmin?: boolean }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { sidebarOpen, setSidebarOpen } = useSidebar();
@@ -87,6 +88,21 @@ export function Sidebar() {
             </Link>
           );
         })}
+        {showPlatformAdmin ? (
+          <Link
+            href="/platform-admin"
+            onClick={() => setSidebarOpen(false)}
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+              pathname.startsWith("/platform-admin")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "hover:bg-sidebar-accent/50"
+            )}
+          >
+            <Shield className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Platform admin</span>}
+          </Link>
+        ) : null}
       </nav>
     </aside>
   );

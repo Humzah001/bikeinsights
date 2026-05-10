@@ -19,9 +19,10 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { calculateWeeks, calculateTotalAmount, getDefaultRentCollectionDate } from "@/lib/calculations";
+import { calculateWeeks, calculateTotalAmount, getDefaultRentCollectionDate, formatCurrency } from "@/lib/calculations";
 import type { Bike } from "@/lib/types";
 import { format } from "date-fns";
+import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 
 const schema = z.object({
   bike_id: z.string().min(1, "Select a bike"),
@@ -44,6 +45,8 @@ function AddRentalForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedBikeId = searchParams.get("bike_id");
+  const { defaultWeeklyRate, loading: prefsLoading, currencySymbol } = useTenantPreferences();
+  const sym = currencySymbol || "£";
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -95,11 +98,13 @@ function AddRentalForm() {
   }, [preselectedBikeId, setValue]);
 
   useEffect(() => {
-    if (bikeId && !weeklyRate) {
+    if (bikeId && !weeklyRate && !prefsLoading) {
       const b = bikes.find((x) => x.id === bikeId);
-      if (b) setValue("weekly_rate", b.weekly_rate || "");
+      const fromBike = b?.weekly_rate?.trim();
+      if (fromBike) setValue("weekly_rate", fromBike);
+      else setValue("weekly_rate", String(defaultWeeklyRate));
     }
-  }, [bikeId, bikes, weeklyRate, setValue]);
+  }, [bikeId, bikes, weeklyRate, setValue, defaultWeeklyRate, prefsLoading]);
 
   useEffect(() => {
     if (startDate) {
@@ -178,7 +183,7 @@ function AddRentalForm() {
                   ) : (
                     bikes.map((b) => (
                       <SelectItem key={b.id} value={b.id}>
-                        {b.name} — £{b.weekly_rate}/week
+                        {b.name} — {formatCurrency(Number(b.weekly_rate || 0), sym)}/week
                       </SelectItem>
                     ))
                   )}
@@ -230,7 +235,7 @@ function AddRentalForm() {
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="weekly_rate">Weekly rate (£)</Label>
+                <Label htmlFor="weekly_rate">Weekly rate ({sym})</Label>
                 <Input
                   id="weekly_rate"
                   type="number"
@@ -244,7 +249,7 @@ function AddRentalForm() {
               </div>
               <div className="space-y-2">
                 <Label>Total amount</Label>
-                <Input value={`£${totalAmount.toFixed(2)}`} readOnly className="bg-muted" />
+                <Input value={formatCurrency(totalAmount, sym)} readOnly className="bg-muted" />
               </div>
             </div>
             <div className="space-y-2">
@@ -255,7 +260,7 @@ function AddRentalForm() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="initial_rent_collected">Rent collected now (£)</Label>
+              <Label htmlFor="initial_rent_collected">Rent collected now ({sym})</Label>
               <Input
                 id="initial_rent_collected"
                 type="number"
@@ -285,7 +290,7 @@ function AddRentalForm() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deposit_amount">Security deposit (£)</Label>
+              <Label htmlFor="deposit_amount">Security deposit ({sym})</Label>
               <Input
                 id="deposit_amount"
                 type="number"

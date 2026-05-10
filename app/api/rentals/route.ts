@@ -4,13 +4,19 @@ import type { Rental, PaymentStatus, RentalStatus } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 import { calculateWeeks, calculateTotalAmount, formatRentWeekDueDate } from "@/lib/calculations";
 import { resolveCollectedOn } from "@/lib/resolve-collected-on";
+import { requireTenantApi } from "@/lib/api-session";
 
 export async function GET() {
-  const data = await db.getRentals();
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
+  const data = await db.getRentals(auth.tenantId);
   return NextResponse.json(data);
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const startDate = body.start_date ?? "";
@@ -67,7 +73,7 @@ export async function POST(request: NextRequest) {
       notes: body.notes ?? "",
       created_at: new Date().toISOString(),
     };
-    const created = await db.createRental(row);
+    const created = await db.createRental(auth.tenantId, row);
 
     if (amountPaidNum > 0.001) {
       try {
@@ -80,7 +86,7 @@ export async function POST(request: NextRequest) {
           },
           1
         );
-        await db.createRentalPayment({
+        await db.createRentalPayment(auth.tenantId, {
           rental_id: row.id,
           amount: String(amountPaidNum),
           ...(dueInitial ? { due_on: dueInitial } : {}),
@@ -97,13 +103,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const bike = await db.getBikeById(row.bike_id);
+    const bike = await db.getBikeById(auth.tenantId, row.bike_id);
     if (bike) {
-      await db.updateBike(row.bike_id, { status: "rented" });
+      await db.updateBike(auth.tenantId, row.bike_id, { status: "rented" });
     }
 
     if (row.payment_status === "pending") {
-      await db.createNotification({
+      await db.createNotification(auth.tenantId, {
         id: `notif-${uuidv4().slice(0, 8)}`,
         type: "payment_pending",
         bike_id: row.bike_id,

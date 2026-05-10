@@ -2,6 +2,12 @@ import type { SessionOptions } from "iron-session";
 
 export interface SessionData {
   userId: string;
+  /** Logged-in user's email (omitted for Buildit4me ADMIN_PASSWORD-only login). */
+  email?: string;
+  /** Active workspace for fleet data (required when isLoggedIn except stale cookies). */
+  tenantId?: string;
+  role?: "owner" | "member";
+  isPlatformAdmin?: boolean;
   isLoggedIn: boolean;
   /** Unix ms — last user activity (navigation or /api/auth/touch). */
   lastActivity?: number;

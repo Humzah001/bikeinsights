@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as db from "@/lib/db";
 import type { Repair } from "@/lib/types";
+import { requireTenantApi } from "@/lib/api-session";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
-  const repair = await db.getRepairById(id);
+  const repair = await db.getRepairById(auth.tenantId, id);
   if (!repair) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(repair);
 }
@@ -16,8 +19,11 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
+
   const { id } = await params;
-  const repair = await db.getRepairById(id);
+  const repair = await db.getRepairById(auth.tenantId, id);
   if (!repair) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await request.json();
@@ -30,22 +36,22 @@ export async function PATCH(
   if (body.status != null) updates.status = body.status;
   if (body.notes != null) updates.notes = body.notes;
 
-  const updated = await db.updateRepair(id, updates);
-  const bike = await db.getBikeById(repair.bike_id);
-  const repairs = await db.getRepairs();
+  const updated = await db.updateRepair(auth.tenantId, id, updates);
+  const bike = await db.getBikeById(auth.tenantId, repair.bike_id);
+  const repairs = await db.getRepairs(auth.tenantId);
   const otherPending = repairs.filter(
     (x) => x.bike_id === repair.bike_id && x.id !== id && (x.status === "pending" || x.status === "in_progress")
   );
 
   if (updated.status === "completed" && (prevStatus === "pending" || prevStatus === "in_progress")) {
     if (bike && bike.status === "under_repair" && otherPending.length === 0) {
-      await db.updateBike(repair.bike_id, { status: "available" });
+      await db.updateBike(auth.tenantId, repair.bike_id, { status: "available" });
     }
   } else if ((updated.status === "pending" || updated.status === "in_progress") && prevStatus === "completed") {
-    if (bike) await db.updateBike(repair.bike_id, { status: "under_repair" });
+    if (bike) await db.updateBike(auth.tenantId, repair.bike_id, { status: "under_repair" });
   } else if (updated.status === "pending" || updated.status === "in_progress") {
     if (bike && bike.status !== "under_repair") {
-      await db.updateBike(repair.bike_id, { status: "under_repair" });
+      await db.updateBike(auth.tenantId, repair.bike_id, { status: "under_repair" });
     }
   }
 
@@ -56,21 +62,24 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
+
   const { id } = await params;
-  const repair = await db.getRepairById(id);
+  const repair = await db.getRepairById(auth.tenantId, id);
   if (!repair) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await db.deleteRepair(id);
+  await db.deleteRepair(auth.tenantId, id);
 
   if (repair.status === "pending" || repair.status === "in_progress") {
-    const repairs = await db.getRepairs();
+    const repairs = await db.getRepairs(auth.tenantId);
     const otherForBike = repairs.filter(
       (r) => r.bike_id === repair.bike_id && (r.status === "pending" || r.status === "in_progress")
     );
     if (otherForBike.length === 0) {
-      const bike = await db.getBikeById(repair.bike_id);
+      const bike = await db.getBikeById(auth.tenantId, repair.bike_id);
       if (bike && bike.status === "under_repair") {
-        await db.updateBike(repair.bike_id, { status: "available" });
+        await db.updateBike(auth.tenantId, repair.bike_id, { status: "available" });
       }
     }
   }

@@ -13,7 +13,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Rental } from "@/lib/types";
-import { getDaysOverdue, getWeeksPaid, getAmountRemaining, getWeeksWithPendingRent, getNextUpcomingRentWeek, formatCurrency } from "@/lib/calculations";
+import {
+  getDaysOverdue,
+  getWeeksPaid,
+  getAmountRemaining,
+  getWeeksWithPendingRent,
+  getNextUpcomingRentWeek,
+  formatCurrency,
+} from "@/lib/calculations";
+import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 import { format } from "date-fns";
 import { Phone, CheckCircle, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -35,6 +43,9 @@ export function PendingClient({
   overdueCount,
   oldestOverdueDays,
 }: PendingClientProps) {
+  const { currencySymbol } = useTenantPreferences();
+  const sym = currencySymbol || "£";
+
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold sm:text-2xl">Pending payments & overdue rentals</h1>
@@ -47,7 +58,7 @@ export function PendingClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(totalOutstanding)}</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalOutstanding, sym)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -128,9 +139,12 @@ export function PendingClient({
                     <TableCell>{r.end_date}</TableCell>
                     <TableCell>{getDaysOverdue(r.end_date)}</TableCell>
                     <TableCell>
-                      £{Number(r.amount_paid || 0).toFixed(0)} of £{r.total_amount} ({getWeeksPaid(Number(r.amount_paid || 0), Number(r.weekly_rate))}/{r.weeks} weeks)
+                      {formatCurrency(Number(r.amount_paid || 0), sym)} of {formatCurrency(Number(r.total_amount), sym)} (
+                      {getWeeksPaid(Number(r.amount_paid || 0), Number(r.weekly_rate))}/{r.weeks} weeks)
                     </TableCell>
-                    <TableCell>£{getAmountRemaining(Number(r.total_amount), Number(r.amount_paid || 0)).toFixed(0)}</TableCell>
+                    <TableCell>
+                      {formatCurrency(getAmountRemaining(Number(r.total_amount), Number(r.amount_paid || 0)), sym)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
                         <Button variant="outline" size="sm" asChild>
@@ -162,7 +176,8 @@ export function PendingClient({
         <CardHeader>
           <CardTitle>Pending payments</CardTitle>
           <CardDescription>
-            Rentals with payment not fully received. Record weekly payments or send reminder.
+            Next unpaid week is due on or before today. Recording that week’s payment clears the row
+            until the following due date.
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
@@ -219,9 +234,12 @@ export function PendingClient({
                         )}
                       </TableCell>
                       <TableCell>
-                        £{Number(r.amount_paid || 0).toFixed(0)} of £{r.total_amount} ({getWeeksPaid(Number(r.amount_paid || 0), Number(r.weekly_rate))}/{r.weeks} weeks)
+                        {formatCurrency(Number(r.amount_paid || 0), sym)} of {formatCurrency(Number(r.total_amount), sym)} (
+                        {getWeeksPaid(Number(r.amount_paid || 0), Number(r.weekly_rate))}/{r.weeks} weeks)
                       </TableCell>
-                      <TableCell>£{getAmountRemaining(Number(r.total_amount), Number(r.amount_paid || 0)).toFixed(0)}</TableCell>
+                      <TableCell>
+                        {formatCurrency(getAmountRemaining(Number(r.total_amount), Number(r.amount_paid || 0)), sym)}
+                      </TableCell>
                       <TableCell className={overdueWeeks.length > 0 ? "text-red-600 dark:text-red-400" : ""}>
                         {rentDueLabel}
                       </TableCell>

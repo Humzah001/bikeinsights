@@ -15,8 +15,10 @@ import {
   getCollectedRentAttributedToRange,
   getMonthKey,
   rentalCountsTowardRevenue,
+  rentalHasUnpaidRentDueOnOrBeforeToday,
 } from "@/lib/calculations";
 import { DashboardClient } from "./DashboardClient";
+import { getTenantAuthOrRedirect } from "@/lib/auth-server";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +71,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ month?: string }>;
 }) {
   const sp = await searchParams;
+  const { tenantId } = await getTenantAuthOrRedirect();
   const now = new Date();
   const viewAnchor = parseViewMonth(sp.month, now);
   const viewMonthStart = startOfMonth(viewAnchor);
@@ -76,13 +79,13 @@ export default async function DashboardPage({
   const viewMonthKey = format(viewMonthStart, "yyyy-MM");
   const isViewingCurrentMonth = getMonthKey(viewMonthStart) === getMonthKey(now);
 
-  await ensureOverdueRentalsUpdated();
-  await ensureWeeklyRentNotifications();
+  await ensureOverdueRentalsUpdated(tenantId);
+  await ensureWeeklyRentNotifications(tenantId);
   const [bikes, rentals, repairs, expenses] = await Promise.all([
-    db.getBikes(),
-    db.getRentals(),
-    db.getRepairs(),
-    db.getExpenses(),
+    db.getBikes(tenantId),
+    db.getRentals(tenantId),
+    db.getRepairs(tenantId),
+    db.getExpenses(tenantId),
   ]);
 
   let monthOptions = Array.from({ length: 36 }, (_, i) => {
@@ -223,12 +226,27 @@ export default async function DashboardPage({
     .filter((r) => {
       const s = parseISO(r.start_date);
       const startedInView = s >= viewMonthStart && s <= viewMonthEnd;
-      return (
-        startedInView &&
-        r.status !== "inactive" &&
-        r.status !== "completed" &&
-        r.payment_status !== "paid" &&
-        (r.payment_status === "pending" || r.payment_status === "partial" || r.status === "overdue")
+      if (
+        !startedInView ||
+        r.status === "inactive" ||
+        r.status === "completed" ||
+        r.payment_status === "paid"
+      ) {
+        return false;
+      }
+      const owesPayment =
+        r.payment_status === "pending" || r.payment_status === "partial" || r.status === "overdue";
+      if (!owesPayment) return false;
+      if (r.status === "overdue") return true;
+      return rentalHasUnpaidRentDueOnOrBeforeToday(
+        {
+          start_date: r.start_date,
+          weeks: r.weeks,
+          weekly_rate: r.weekly_rate,
+          amount_paid: r.amount_paid,
+          rent_collection_date: r.rent_collection_date,
+        },
+        new Date()
       );
     })
     .sort((a, b) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime())

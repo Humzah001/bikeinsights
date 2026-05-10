@@ -17,6 +17,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format, parse, parseISO } from "date-fns";
+import { getTenantAuthOrRedirect } from "@/lib/auth-server";
+import * as platformDb from "@/lib/db-platform";
 
 export const dynamic = "force-dynamic";
 
@@ -117,10 +119,14 @@ function paymentTypeLabel(t: RentalPayment["payment_type"]): string {
 }
 
 export default async function CollectedRentPage() {
+  const { tenantId } = await getTenantAuthOrRedirect();
+  const tenant = await platformDb.getTenantById(tenantId);
+  const currency = tenant?.currency_symbol?.trim() || "£";
+
   const [payments, rentals, bikes] = await Promise.all([
-    db.getAllRentalPayments(),
-    db.getRentals(),
-    db.getBikes(),
+    db.getAllRentalPayments(tenantId),
+    db.getRentals(tenantId),
+    db.getBikes(tenantId),
   ]);
 
   const rentalById = new Map(rentals.map((r) => [r.id, r]));
@@ -151,7 +157,7 @@ export default async function CollectedRentPage() {
           <CardTitle>All collections</CardTitle>
           <CardDescription>
             {rows.length} entr{rows.length !== 1 ? "ies" : "y"}
-            {rows.length > 0 ? ` · ${formatCurrency(totalListed)} in this list` : ""}. Older activity may only appear on
+            {rows.length > 0 ? ` · ${formatCurrency(totalListed, currency)} in this list` : ""}. Older activity may only appear on
             the rental if it was recorded before this log existed.
           </CardDescription>
         </CardHeader>
@@ -184,7 +190,7 @@ export default async function CollectedRentPage() {
                   <TableRow key={p.id}>
                     <ScheduledDueWithWeekCell payment={p} rental={rental} />
                     <DateCell iso={p.collected_on || null} />
-                    <TableCell className="text-right tabular-nums">{formatCurrency(Number(p.amount))}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCurrency(Number(p.amount), currency)}</TableCell>
                     <TableCell>{paymentTypeLabel(p.payment_type)}</TableCell>
                     <TableCell>
                       {bike ? (

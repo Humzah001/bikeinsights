@@ -18,13 +18,17 @@ import {
   getRentDueDateForWeek,
   getDefaultRentCollectionDate,
   canRecordWeeklyRentPayment,
+  formatCurrency,
 } from "@/lib/calculations";
 import { format } from "date-fns";
+import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 
 export default function RentalDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
+  const { currencySymbol } = useTenantPreferences();
+  const sym = currencySymbol || "£";
   const [rental, setRental] = useState<Rental | null>(null);
   const [loading, setLoading] = useState(true);
   const [actioning, setActioning] = useState(false);
@@ -121,7 +125,7 @@ export default function RentalDetailPage() {
       if (weeksPaid >= totalWeeks) {
         toast.success("Full payment recorded — rental deactivated (no rent-due alerts)");
       } else {
-        toast.success(`Week ${weeksPaid} payment recorded (£${updated.weekly_rate})`);
+        toast.success(`Week ${weeksPaid} payment recorded (${formatCurrency(Number(updated.weekly_rate), sym)})`);
       }
       router.refresh();
     } catch (e) {
@@ -177,7 +181,7 @@ export default function RentalDetailPage() {
       if (updated.payment_status === "paid") {
         toast.success("Recorded — fully paid; rental deactivated (no rent-due alerts)");
       } else {
-        toast.success(`Recorded £${n.toFixed(2)}`);
+        toast.success(`Recorded ${formatCurrency(n, sym)}`);
       }
       router.refresh();
     } catch (e) {
@@ -289,17 +293,17 @@ export default function RentalDetailPage() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Weekly rate</p>
-              <p>£{rental.weekly_rate}</p>
+              <p>{formatCurrency(Number(rental.weekly_rate), sym)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total amount</p>
-              <p className="font-semibold">£{rental.total_amount}</p>
+              <p className="font-semibold">{formatCurrency(Number(rental.total_amount), sym)}</p>
             </div>
           </div>
           {Number(rental.deposit_amount || 0) > 0 && (
             <div className="rounded-lg border border-dashed p-4">
               <p className="text-sm font-medium text-muted-foreground">Security deposit</p>
-              <p className="mt-1 font-semibold">£{Number(rental.deposit_amount).toFixed(2)} held — return to customer when the bike is back</p>
+              <p className="mt-1 font-semibold">{formatCurrency(Number(rental.deposit_amount), sym)} held — return to customer when the bike is back</p>
               {rental.deposit_refunded === "true" ? (
                 <p className="mt-2 text-sm text-green-600 dark:text-green-400">Deposit marked as refunded</p>
               ) : (
@@ -317,14 +321,15 @@ export default function RentalDetailPage() {
               . Later weeks are every 7 days.
             </p>
             <p className="mt-1 text-lg font-semibold">
-              £{Number(rental.amount_paid || 0).toFixed(2)} of £{rental.total_amount} paid
+              {formatCurrency(Number(rental.amount_paid || 0), sym)} of {formatCurrency(Number(rental.total_amount), sym)} paid
               <span className="ml-2 text-sm font-normal text-muted-foreground">
                 ({getWeeksPaid(Number(rental.amount_paid || 0), Number(rental.weekly_rate))} of {rental.weeks} weeks)
               </span>
             </p>
             {rental.payment_status !== "paid" && (
               <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
-                £{getAmountRemaining(Number(rental.total_amount), Number(rental.amount_paid || 0)).toFixed(2)} remaining
+                {formatCurrency(getAmountRemaining(Number(rental.total_amount), Number(rental.amount_paid || 0)), sym)}{" "}
+                remaining
               </p>
             )}
             {rental.status === "inactive" && rental.payment_status === "paid" && (
@@ -365,7 +370,7 @@ export default function RentalDetailPage() {
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder="Amount (£)"
+                    placeholder={`Amount (${sym})`}
                     className="w-36"
                     value={manualAmount}
                     onChange={(e) => setManualAmount(e.target.value)}
@@ -406,7 +411,7 @@ export default function RentalDetailPage() {
                   disabled={actioning || !weeklyCollectGate.ok}
                   title={!weeklyCollectGate.ok ? weeklyCollectGate.reason : undefined}
                 >
-                  Record weekly payment (£{rental.weekly_rate})
+                  Record weekly payment ({formatCurrency(Number(rental.weekly_rate), sym)})
                 </Button>
                 {!weeklyCollectGate.ok && (
                   <p className="w-full text-sm text-muted-foreground">{weeklyCollectGate.reason}</p>

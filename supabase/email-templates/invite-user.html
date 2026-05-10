@@ -1,0 +1,95 @@
+<!--
+  IMPORTANT: Supabase does NOT read this file when sending mail.
+  Your hosted project uses whatever is saved in:
+    Dashboard → Authentication → Email Templates → "Invite user"
+
+  If emails still look like the plain default ("You have been invited" + one blue link),
+  the template was never saved there.
+
+  Paste file: supabase/email-templates/invite-user-body-only.html (entire file — no comments).
+  Or paste everything below this comment block only.
+
+  After saving in Dashboard, send a NEW invite — old messages stay plain.
+
+  Optional CLI: npm run supabase:push-invite-email (needs SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF)
+
+  Subject (same Dashboard screen): You're invited to BikeInsights
+
+  Logo: Set INVITE_EMAIL_LOGO_URL or upload to Storage bucket email-assets (migration 012, npm run storage:upload-email-logo).
+  Invite metadata passes email_logo_url (Supabase CDN); falls back to email_logo_origin / SiteURL.
+
+  Supabase Redirect URLs must allow the full invite path (e.g. https://YOUR_DOMAIN/invite/accept or .../**) or Supabase falls back to Site URL only.
+-->
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0;padding:24px 12px;background-color:#f4f4f5;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:12px;border:1px solid #e5e5e5;overflow:hidden;">
+        <tr>
+          <td style="padding:28px 32px 16px 32px;background-color:#fafafa;">
+            {{ if .Data.email_logo_url }}
+            <img src="{{ .Data.email_logo_url }}" width="164" height="29" alt="BikeInsights" style="display:block;border:0;outline:none;text-decoration:none;"/>
+            {{ else if .Data.email_logo_origin }}
+            <img src="{{ .Data.email_logo_origin }}/email/bikeinsights-logo.svg" width="164" height="29" alt="BikeInsights" style="display:block;border:0;outline:none;text-decoration:none;"/>
+            {{ else }}
+            <img src="{{ .SiteURL }}/email/bikeinsights-logo.svg" width="164" height="29" alt="BikeInsights" style="display:block;border:0;outline:none;text-decoration:none;"/>
+            {{ end }}
+            <p style="margin:12px 0 0 0;font-size:17px;font-weight:600;color:#242424;line-height:1.3;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;">
+              BikeInsights
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 32px 28px 32px;">
+            <h1 style="margin:20px 0 12px 0;font-size:20px;line-height:1.35;font-weight:700;color:#171717;">
+              You are invited
+            </h1>
+            <p style="margin:0 0 16px 0;font-size:15px;line-height:1.55;color:#404040;">
+              You have been invited to join <strong>BikeInsights</strong>. Use the button below to accept your invitation,
+              choose a password, and open your workspace.
+            </p>
+
+            {{ if .Data.tenant_name }}
+            <p style="margin:0 0 12px 0;font-size:15px;line-height:1.55;color:#404040;">
+              <strong style="color:#171717;">Workspace</strong><br/>
+              <span style="color:#525252;">{{ .Data.tenant_name }}</span>
+            </p>
+            {{ end }}
+
+            {{ if .Data.trial_summary }}
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 20px 0;background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
+              <tr>
+                <td style="padding:14px 16px;font-size:14px;line-height:1.55;color:#1e3a5f;">
+                  {{ .Data.trial_summary }}
+                </td>
+              </tr>
+            </table>
+            {{ end }}
+
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+              <tr>
+                <td style="border-radius:10px;background-color:#171717;">
+                  <a href="{{ .ConfirmationURL }}" target="_blank" rel="noopener noreferrer"
+                     style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;">
+                    Accept invitation
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:20px 0 0 0;font-size:13px;line-height:1.5;color:#737373;">
+              Invited address: <span style="color:#525252;">{{ .Email }}</span>
+            </p>
+            <p style="margin:12px 0 0 0;font-size:12px;line-height:1.5;color:#a3a3a3;">
+              If the button does not work, copy this link into your browser:<br/>
+              <span style="color:#737373;word-break:break-all;">{{ .ConfirmationURL }}</span>
+            </p>
+            <p style="margin:24px 0 0 0;font-size:12px;line-height:1.5;color:#a3a3a3;border-top:1px solid #f5f5f5;padding-top:20px;">
+              &copy; BikeInsights &middot; <a href="{{ .SiteURL }}" style="color:#737373;text-decoration:underline;">{{ .SiteURL }}</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>

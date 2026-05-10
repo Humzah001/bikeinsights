@@ -1,14 +1,14 @@
 import { addDays, isBefore, parseISO, format } from "date-fns";
 import * as db from "@/lib/db";
-import type { Notification, Rental } from "@/lib/types";
+import type { Notification } from "@/lib/types";
 import { getWeeksWithPendingRent, getRentDueDateForWeek } from "@/lib/calculations";
 import { v4 as uuidv4 } from "uuid";
 
 const NOTIFICATION_DAYS_DUE_SOON = 2;
 const PAYMENT_PENDING_DAYS = 3;
 
-export async function ensureOverdueRentalsUpdated(): Promise<void> {
-  const rentals = await db.getRentals();
+export async function ensureOverdueRentalsUpdated(tenantId: string): Promise<void> {
+  const rentals = await db.getRentals(tenantId);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   for (const r of rentals) {
@@ -17,13 +17,11 @@ export async function ensureOverdueRentalsUpdated(): Promise<void> {
     const end = parseISO(r.end_date);
     end.setHours(0, 0, 0, 0);
     if (isBefore(end, today)) {
-      await db.updateRental(r.id, { status: "overdue" });
-      const notifications = await db.getNotifications();
-      const exists = notifications.some(
-        (n) => n.type === "rent_overdue" && n.rental_id === r.id
-      );
+      await db.updateRental(tenantId, r.id, { status: "overdue" });
+      const notifications = await db.getNotifications(tenantId);
+      const exists = notifications.some((n) => n.type === "rent_overdue" && n.rental_id === r.id);
       if (!exists) {
-        await db.createNotification({
+        await db.createNotification(tenantId, {
           id: `notif-${uuidv4().slice(0, 8)}`,
           type: "rent_overdue",
           bike_id: r.bike_id,
@@ -40,9 +38,9 @@ export async function ensureOverdueRentalsUpdated(): Promise<void> {
   }
 }
 
-export async function getOrCreateDueSoonAndPaymentPendingNotifications(): Promise<void> {
-  const rentals = await db.getRentals();
-  const notifications = await db.getNotifications();
+export async function getOrCreateDueSoonAndPaymentPendingNotifications(tenantId: string): Promise<void> {
+  const rentals = await db.getRentals(tenantId);
+  const notifications = await db.getNotifications(tenantId);
   const now = new Date();
   const dueSoonEnd = addDays(now, NOTIFICATION_DAYS_DUE_SOON);
 
@@ -51,9 +49,7 @@ export async function getOrCreateDueSoonAndPaymentPendingNotifications(): Promis
     if (r.payment_status === "paid") continue;
     const end = parseISO(r.end_date);
     const start = parseISO(r.start_date);
-    const daysSinceStart = Math.floor(
-      (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const daysSinceStart = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
     if (end <= dueSoonEnd && end >= now) {
       const exists = notifications.some(
@@ -63,7 +59,7 @@ export async function getOrCreateDueSoonAndPaymentPendingNotifications(): Promis
           parseISO(n.created_at) > addDays(now, -1)
       );
       if (!exists) {
-        await db.createNotification({
+        await db.createNotification(tenantId, {
           id: `notif-${uuidv4().slice(0, 8)}`,
           type: "rent_due_soon",
           bike_id: r.bike_id,
@@ -79,11 +75,9 @@ export async function getOrCreateDueSoonAndPaymentPendingNotifications(): Promis
     }
 
     if (r.payment_status === "pending" && daysSinceStart > PAYMENT_PENDING_DAYS) {
-      const exists = notifications.some(
-        (n) => n.type === "payment_pending" && n.rental_id === r.id
-      );
+      const exists = notifications.some((n) => n.type === "payment_pending" && n.rental_id === r.id);
       if (!exists) {
-        await db.createNotification({
+        await db.createNotification(tenantId, {
           id: `notif-${uuidv4().slice(0, 8)}`,
           type: "payment_pending",
           bike_id: r.bike_id,
@@ -100,10 +94,10 @@ export async function getOrCreateDueSoonAndPaymentPendingNotifications(): Promis
   }
 }
 
-/** Create notifications for each week where Tuesday has passed but that week's rent is not paid. Rent due every Tuesday. */
-export async function ensureWeeklyRentNotifications(): Promise<void> {
-  const rentals = await db.getRentals();
-  const existing = await db.getNotifications();
+/** Create notifications for each week where due date has passed but that week's rent is not paid. */
+export async function ensureWeeklyRentNotifications(tenantId: string): Promise<void> {
+  const rentals = await db.getRentals(tenantId);
+  const existing = await db.getNotifications(tenantId);
   const today = new Date();
 
   for (const r of rentals) {
@@ -142,7 +136,7 @@ export async function ensureWeeklyRentNotifications(): Promise<void> {
       );
       if (alreadyExists) continue;
 
-      await db.createNotification({
+      await db.createNotification(tenantId, {
         id: `notif-${uuidv4().slice(0, 8)}`,
         type: "week_rent_pending",
         bike_id: r.bike_id,
@@ -170,15 +164,15 @@ export async function ensureWeeklyRentNotifications(): Promise<void> {
   }
 }
 
-export async function markNotificationRead(id: string): Promise<void> {
-  const notifications = await db.getNotifications();
+export async function markNotificationRead(tenantId: string, id: string): Promise<void> {
+  const notifications = await db.getNotifications(tenantId);
   const n = notifications.find((x) => x.id === id);
-  if (n) await db.updateNotification(id, { is_read: "true" });
+  if (n) await db.updateNotification(tenantId, id, { is_read: "true" });
 }
 
-export async function markAllNotificationsRead(): Promise<void> {
-  const notifications = await db.getNotifications();
+export async function markAllNotificationsRead(tenantId: string): Promise<void> {
+  const notifications = await db.getNotifications(tenantId);
   for (const n of notifications) {
-    await db.updateNotification(n.id, { is_read: "true" });
+    await db.updateNotification(tenantId, n.id, { is_read: "true" });
   }
 }

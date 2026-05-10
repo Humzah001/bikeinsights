@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as db from "@/lib/db";
-import type { Rental } from "@/lib/types";
 import { sendReminderEmail } from "@/lib/email";
+import { requireTenantApi } from "@/lib/api-session";
 
 export async function POST(request: NextRequest) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
+
   try {
     const { rental_id } = await request.json();
     if (!rental_id) {
       return NextResponse.json({ error: "rental_id required" }, { status: 400 });
     }
-    const rental = await db.getRentalById(rental_id);
+    const rental = await db.getRentalById(auth.tenantId, rental_id);
     if (!rental) {
       return NextResponse.json({ error: "Rental not found" }, { status: 404 });
     }
     if (!rental.customer_email) {
-      return NextResponse.json(
-        { error: "No customer email for this rental" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No customer email for this rental" }, { status: 400 });
     }
     if (
       rental.payment_status === "paid" ||
@@ -38,10 +38,7 @@ export async function POST(request: NextRequest) {
       endDate: rental.end_date,
     });
     if (!result.ok) {
-      return NextResponse.json(
-        { error: result.error || "Failed to send email" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: result.error || "Failed to send email" }, { status: 500 });
     }
     return NextResponse.json({ ok: true });
   } catch (e) {

@@ -19,6 +19,8 @@ import {
   Area,
 } from "recharts";
 import { Download } from "lucide-react";
+import { formatCurrency } from "@/lib/calculations";
+import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 
 interface AnalyticsClientProps {
   revenueVsExpenses: { month: string; revenue: number; expenses: number; profit: number }[];
@@ -41,6 +43,8 @@ export function AnalyticsClient({
   busiestMonths,
   avgWeeklyRateByMonth,
 }: AnalyticsClientProps) {
+  const { currencySymbol } = useTenantPreferences();
+  const sym = currencySymbol || "£";
   const [dateRange, setDateRange] = useState("12");
 
   function exportReport() {
@@ -91,8 +95,8 @@ export function AnalyticsClient({
               <ComposedChart data={revenueVsExpenses}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="month" />
-                <YAxis tickFormatter={(v) => `£${v}`} />
-                <Tooltip formatter={(v: number | undefined) => [v != null ? `£${v.toFixed(2)}` : "", ""]} />
+                <YAxis tickFormatter={(v) => `${sym}${v}`} />
+                <Tooltip formatter={(v: number | undefined) => [v != null ? formatCurrency(v, sym) : "", ""]} />
                 <Line type="monotone" dataKey="revenue" stroke="#22c55e" name="Collected rent" strokeWidth={2} />
                 <Line type="monotone" dataKey="expenses" stroke="#ef4444" name="Expenses" strokeWidth={2} />
                 <Line type="monotone" dataKey="profit" stroke="#3b82f6" name="Profit" strokeWidth={2} />
@@ -113,8 +117,8 @@ export function AnalyticsClient({
               <BarChart data={monthlyNetPnl}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="month" />
-                <YAxis tickFormatter={(v) => `£${v}`} />
-                <Tooltip formatter={(v: number | undefined) => [v != null ? `£${v.toFixed(2)}` : "", "Profit"]} />
+                <YAxis tickFormatter={(v) => `${sym}${v}`} />
+                <Tooltip formatter={(v: number | undefined) => [v != null ? formatCurrency(v, sym) : "", "Profit"]} />
                 <Bar
                   dataKey="profit"
                   name="Profit"
@@ -138,9 +142,9 @@ export function AnalyticsClient({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topEarningBikes} layout="vertical" margin={{ left: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis type="number" tickFormatter={(v) => `£${v}`} />
+                  <XAxis type="number" tickFormatter={(v) => `${sym}${v}`} />
                   <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number | undefined) => [v != null ? `£${v.toFixed(2)}` : "", "Collected rent"]} />
+                  <Tooltip formatter={(v: number | undefined) => [v != null ? formatCurrency(v, sym) : "", "Collected rent"]} />
                   <Bar dataKey="revenue" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -156,9 +160,9 @@ export function AnalyticsClient({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={costPerBike} layout="vertical" margin={{ left: 80 }} stackOffset="expand">
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis type="number" tickFormatter={(v) => `£${v}`} />
+                  <XAxis type="number" tickFormatter={(v) => `${sym}${v}`} />
                   <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number | undefined) => [v != null ? `£${v.toFixed(2)}` : "", ""]} />
+                  <Tooltip formatter={(v: number | undefined) => [v != null ? formatCurrency(v, sym) : "", ""]} />
                   <Bar dataKey="repairs" stackId="a" fill="#f59e0b" name="Repairs" radius={[0, 0, 0, 0]} />
                   <Bar dataKey="expenses" stackId="a" fill="#ef4444" name="Expenses" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -239,9 +243,9 @@ export function AnalyticsClient({
                 <LineChart data={avgWeeklyRateByMonth}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(v) => `£${v}`} />
-                  <Tooltip formatter={(v: number | undefined) => [v != null ? `£${v.toFixed(2)}` : "", "Avg rate"]} />
-                  <Line type="monotone" dataKey="avg" stroke="#ec4899" name="Avg £/week" strokeWidth={2} />
+                  <YAxis tickFormatter={(v) => `${sym}${v}`} />
+                  <Tooltip formatter={(v: number | undefined) => [v != null ? formatCurrency(v, sym) : "", "Avg rate"]} />
+                  <Line type="monotone" dataKey="avg" stroke="#ec4899" name={`Avg ${sym}/week`} strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

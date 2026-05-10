@@ -33,6 +33,7 @@ import {
 import { formatCurrency, getWeeksPaid } from "@/lib/calculations";
 import { DashboardMonthSelect } from "@/components/dashboard/DashboardMonthSelect";
 import { AlertCircle, AlertTriangle, Info } from "lucide-react";
+import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 
 const STATUS_COLORS = {
   available: "bg-green-500/20 text-green-600 dark:text-green-400",
@@ -137,11 +138,13 @@ function ProfitSummaryStrip({
   expenses,
   profit,
   periodLabel,
+  currencySymbol,
 }: {
   revenue: number;
   expenses: number;
   profit: number;
   periodLabel: string;
+  currencySymbol: string;
 }) {
   return (
     <div className="rounded-lg border bg-muted/30 p-4">
@@ -150,13 +153,13 @@ function ProfitSummaryStrip({
         <div>
           <p className="text-xs text-muted-foreground">Collected rent</p>
           <p className="text-lg font-semibold tabular-nums text-green-600 dark:text-green-400">
-            {formatCurrency(revenue)}
+            {formatCurrency(revenue, currencySymbol)}
           </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Repairs and expenses</p>
           <p className="text-lg font-semibold tabular-nums text-red-600 dark:text-red-400">
-            {formatCurrency(expenses)}
+            {formatCurrency(expenses, currencySymbol)}
           </p>
         </div>
         <div>
@@ -166,7 +169,7 @@ function ProfitSummaryStrip({
               profit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
             }`}
           >
-            {formatCurrency(profit)}
+            {formatCurrency(profit, currencySymbol)}
           </p>
         </div>
       </div>
@@ -202,6 +205,9 @@ export function DashboardClient({
   pendingRepairCount,
   pieChartTitles,
 }: DashboardClientProps) {
+  const { currencySymbol } = useTenantPreferences();
+  const sym = currencySymbol || "£";
+
   const bikeStatusPie = [
     { name: "Available", value: bikeStatusCounts.available, color: PIE_COLORS[0] },
     { name: "Rented", value: bikeStatusCounts.rented, color: PIE_COLORS[1] },
@@ -276,7 +282,7 @@ export function DashboardClient({
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KPICard
           title={kpiCopy.rentTitle}
-          value={formatCurrency(kpis.revenueThisMonth)}
+          value={formatCurrency(kpis.revenueThisMonth, sym)}
           variant="default"
           subtitle={kpiCopy.rentSubtitle}
         />
@@ -302,11 +308,11 @@ export function DashboardClient({
         />
         <KPICard
           title={`${kpiCopy.expensesTitle} (${kpiCopy.rentSubtitle})`}
-          value={formatCurrency(kpis.totalExpensesThisMonth)}
+          value={formatCurrency(kpis.totalExpensesThisMonth, sym)}
         />
         <KPICard
           title={`${kpiCopy.profitTitle} (${kpiCopy.rentSubtitle})`}
-          value={formatCurrency(kpis.netProfitThisMonth)}
+          value={formatCurrency(kpis.netProfitThisMonth, sym)}
           variant={kpis.netProfitThisMonth >= 0 ? "positive" : "negative"}
           subtitle="Collected rent minus repairs and expenses"
         />
@@ -335,6 +341,7 @@ export function DashboardClient({
                 expenses={profitSummaries.week.expenses}
                 profit={profitSummaries.week.profit}
                 periodLabel={`Combined · ${weekRangeLabel}`}
+                currencySymbol={sym}
               />
               <div className="h-[260px] w-full min-w-0">
                 {weeklyData.length > 0 ? (
@@ -342,10 +349,10 @@ export function DashboardClient({
                     <ComposedChart data={weeklyData}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="week" className="text-xs" tick={{ fontSize: 10 }} />
-                      <YAxis className="text-xs" tickFormatter={(v) => `£${v}`} width={48} />
+                      <YAxis className="text-xs" tickFormatter={(v) => `${sym}${v}`} width={48} />
                       <Tooltip
                         formatter={(v: number | undefined, name?: string) => [
-                          v != null ? `£${v.toFixed(2)}` : "",
+                          v != null ? formatCurrency(v, sym) : "",
                           name === "revenue" ? "Rent" : name === "expenses" ? "Costs" : "Net profit",
                         ]}
                       />
@@ -377,16 +384,17 @@ export function DashboardClient({
                 expenses={profitSummaries.month.expenses}
                 profit={profitSummaries.month.profit}
                 periodLabel={monthRangeLabel}
+                currencySymbol={sym}
               />
               <div className="h-[260px] w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="month" className="text-xs" />
-                    <YAxis className="text-xs" tickFormatter={(v) => `£${v}`} width={48} />
+                    <YAxis className="text-xs" tickFormatter={(v) => `${sym}${v}`} width={48} />
                     <Tooltip
                       formatter={(v: number | undefined, name?: string) => [
-                        v != null ? `£${v.toFixed(2)}` : "",
+                        v != null ? formatCurrency(v, sym) : "",
                         name === "revenue" ? "Rent" : name === "expenses" ? "Costs" : "Net profit",
                       ]}
                     />
@@ -413,16 +421,17 @@ export function DashboardClient({
                 expenses={profitSummaries.year.expenses}
                 profit={profitSummaries.year.profit}
                 periodLabel={`Calendar year ${yearSummaryLabel}`}
+                currencySymbol={sym}
               />
               <div className="h-[260px] w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={yearlyData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="year" className="text-xs" />
-                    <YAxis className="text-xs" tickFormatter={(v) => `£${v}`} width={52} />
+                    <YAxis className="text-xs" tickFormatter={(v) => `${sym}${v}`} width={52} />
                     <Tooltip
                       formatter={(v: number | undefined, name?: string) => [
-                        v != null ? `£${v.toFixed(2)}` : "",
+                        v != null ? formatCurrency(v, sym) : "",
                         name === "revenue" ? "Rent" : name === "expenses" ? "Costs" : "Net profit",
                       ]}
                     />
@@ -538,7 +547,7 @@ export function DashboardClient({
                         <Cell key={i} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v: number | undefined) => [v != null ? `£${v.toFixed(2)}` : "", ""]} />
+                    <Tooltip formatter={(v: number | undefined) => [v != null ? formatCurrency(v, sym) : "", ""]} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -560,9 +569,9 @@ export function DashboardClient({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={revenueByBike} layout="vertical" margin={{ left: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis type="number" tickFormatter={(v) => `£${v}`} />
+                  <XAxis type="number" tickFormatter={(v) => `${sym}${v}`} />
                   <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number | undefined) => [v != null ? `£${v.toFixed(2)}` : "", "Collected rent"]} />
+                  <Tooltip formatter={(v: number | undefined) => [v != null ? formatCurrency(v, sym) : "", "Collected rent"]} />
                   <Bar dataKey="revenue" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -599,7 +608,7 @@ export function DashboardClient({
                     <TableCell className="text-xs">
                       {r.start_date} – {r.end_date}
                     </TableCell>
-                    <TableCell>£{r.total_amount}</TableCell>
+                    <TableCell>{formatCurrency(Number(r.total_amount), sym)}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {getWeeksPaid(Number(r.amount_paid || 0), Number(r.weekly_rate))}/{r.weeks} weeks
                     </TableCell>
@@ -682,7 +691,7 @@ export function DashboardClient({
                   <TableRow key={i}>
                     <TableCell className="font-medium">{r.bike_name}</TableCell>
                     <TableCell className="max-w-[120px] truncate">{r.description}</TableCell>
-                    <TableCell>£{r.cost}</TableCell>
+                    <TableCell>{formatCurrency(Number(r.cost), sym)}</TableCell>
                     <TableCell>
                       <Badge
                         className={

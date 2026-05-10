@@ -23,8 +23,12 @@ import { Badge } from "@/components/ui/badge";
 import type { Repair, Bike } from "@/lib/types";
 import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/calculations";
+import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 
 export default function RepairsPage() {
+  const { currencySymbol } = useTenantPreferences();
+  const sym = currencySymbol || "£";
   const [repairs, setRepairs] = useState<Repair[]>([]);
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -94,7 +98,7 @@ export default function RepairsPage() {
 
       <Card>
         <CardContent className="pt-4">
-          <p className="text-lg font-semibold">Total repair costs: £{totalCost.toFixed(2)}</p>
+          <p className="text-lg font-semibold">Total repair costs: {formatCurrency(totalCost, sym)}</p>
         </CardContent>
       </Card>
 
@@ -148,7 +152,7 @@ export default function RepairsPage() {
                 </TableCell>
                 <TableCell>{r.description}</TableCell>
                 <TableCell>{r.repair_date}</TableCell>
-                <TableCell>£{r.cost}</TableCell>
+                <TableCell>{formatCurrency(Number(r.cost), sym)}</TableCell>
                 <TableCell>{r.repair_shop}</TableCell>
                 <TableCell>
                   <Badge className={cn(statusClass[r.status])}>{r.status.replace("_", " ")}</Badge>

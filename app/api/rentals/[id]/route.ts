@@ -9,13 +9,16 @@ import {
   getWeeksPaid,
 } from "@/lib/calculations";
 import { resolveCollectedOn } from "@/lib/resolve-collected-on";
+import { requireTenantApi } from "@/lib/api-session";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
-  const rental = await db.getRentalById(id);
+  const rental = await db.getRentalById(auth.tenantId, id);
   if (!rental) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(rental);
 }
@@ -25,8 +28,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireTenantApi();
+    if (!auth.ok) return auth.response;
+
     const { id } = await params;
-    const rental = await db.getRentalById(id);
+    const rental = await db.getRentalById(auth.tenantId, id);
     if (!rental) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const body = await request.json();
@@ -83,7 +89,7 @@ export async function PATCH(
         },
         weekNum
       );
-      await db.createRentalPayment({
+      await db.createRentalPayment(auth.tenantId, {
         rental_id: id,
         amount: String(rate),
         ...(dueForWeek ? { due_on: dueForWeek } : {}),
@@ -115,7 +121,7 @@ export async function PATCH(
             )
           : null;
       updates.amount_paid = String(paidBeforeManual + add);
-      await db.createRentalPayment({
+      await db.createRentalPayment(auth.tenantId, {
         rental_id: id,
         amount: String(add),
         ...(dueManual ? { due_on: dueManual } : {}),
@@ -147,7 +153,7 @@ export async function PATCH(
                 weekForSettle
               )
             : null;
-        await db.createRentalPayment({
+        await db.createRentalPayment(auth.tenantId, {
           rental_id: id,
           amount: String(Math.round(delta * 100) / 100),
           ...(dueSettle ? { due_on: dueSettle } : {}),
@@ -181,7 +187,7 @@ export async function PATCH(
                 weekForAdj
               )
             : null;
-        await db.createRentalPayment({
+        await db.createRentalPayment(auth.tenantId, {
           rental_id: id,
           amount: String(Math.round((target - beforeAdj) * 100) / 100),
           ...(dueAdj ? { due_on: dueAdj } : {}),
@@ -203,7 +209,7 @@ export async function PATCH(
     if (isFullyPaid) {
       updates.payment_status = "paid";
       updates.amount_paid = String(totalNum);
-      await db.deleteNotificationsByRentalId(id);
+      await db.deleteNotificationsByRentalId(auth.tenantId, id);
     } else {
       if (body.payment_status != null) {
         updates.payment_status = body.payment_status;
@@ -216,15 +222,15 @@ export async function PATCH(
 
     if (body.status === "completed") {
       updates.status = "completed";
-      const bike = await db.getBikeById(rental.bike_id);
-      if (bike) await db.updateBike(rental.bike_id, { status: "available" });
+      const bike = await db.getBikeById(auth.tenantId, rental.bike_id);
+      if (bike) await db.updateBike(auth.tenantId, rental.bike_id, { status: "available" });
     } else if (isFullyPaid) {
       updates.status = "inactive";
     } else if (body.status != null) {
       updates.status = body.status;
     }
 
-    const updated = await db.updateRental(id, updates);
+    const updated = await db.updateRental(auth.tenantId, id, updates);
     return NextResponse.json(updated);
   } catch (err) {
     throw err;
@@ -235,15 +241,18 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
+
   const { id } = await params;
-  const rental = await db.getRentalById(id);
+  const rental = await db.getRentalById(auth.tenantId, id);
   if (!rental) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await db.deleteRental(id);
+  await db.deleteRental(auth.tenantId, id);
 
   if (rental.status === "active" || rental.status === "overdue" || rental.status === "inactive") {
-    const bike = await db.getBikeById(rental.bike_id);
-    if (bike) await db.updateBike(rental.bike_id, { status: "available" });
+    const bike = await db.getBikeById(auth.tenantId, rental.bike_id);
+    if (bike) await db.updateBike(auth.tenantId, rental.bike_id, { status: "available" });
   }
 
   return NextResponse.json({ ok: true });

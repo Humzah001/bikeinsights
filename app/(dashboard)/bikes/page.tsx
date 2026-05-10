@@ -8,10 +8,14 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BikeCard } from "@/components/bikes/BikeCard";
 import type { Bike, Rental } from "@/lib/types";
 import { Plus } from "lucide-react";
+import { formatCurrency } from "@/lib/calculations";
+import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 
 type FilterStatus = "all" | "available" | "rented" | "under_repair" | "retired";
 
 export default function BikesPage() {
+  const { currencySymbol } = useTenantPreferences();
+  const sym = currencySymbol || "£";
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [filter, setFilter] = useState<FilterStatus>("all");
@@ -81,7 +85,7 @@ export default function BikesPage() {
 
       <div className="flex flex-col gap-4 rounded-lg border bg-card p-4">
         <p className="text-sm text-muted-foreground">
-          Total: {totalBikes} bikes · Earning this week: £{earningThisWeek.toFixed(2)} · Idle: {idleBikes}
+          Total: {totalBikes} bikes · Earning this week: {formatCurrency(earningThisWeek, sym)} · Idle: {idleBikes}
         </p>
         <div className="flex flex-col gap-4 sm:flex-row">
           <Input
@@ -108,6 +112,7 @@ export default function BikesPage() {
             key={bike.id}
             bike={bike}
             currentRenter={activeRentalByBikeId[bike.id] || null}
+            currencySymbol={sym}
           />
         ))}
       </div>

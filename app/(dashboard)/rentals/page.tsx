@@ -27,13 +27,17 @@ import {
   getWeeksPaid,
   isOverdue,
   rentalCountsTowardRevenue,
+  formatCurrency,
 } from "@/lib/calculations";
 import { endOfMonth, format, parseISO, startOfMonth } from "date-fns";
 import { Plus, Download, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 
 export default function RentalsPage() {
+  const { currencySymbol } = useTenantPreferences();
+  const sym = currencySymbol || "£";
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -147,7 +151,7 @@ export default function RentalsPage() {
 
       <div className="rounded-lg border bg-card p-4">
         <p className="mb-3 text-sm text-muted-foreground">
-          Active: {activeCount} · Collected rent this month: £{thisMonthRevenue.toFixed(2)}
+          Active: {activeCount} · Collected rent this month: {formatCurrency(thisMonthRevenue, sym)}
         </p>
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
           <Input
@@ -239,8 +243,8 @@ export default function RentalsPage() {
                     )}
                   </TableCell>
                   <TableCell>{r.weeks}</TableCell>
-                  <TableCell>£{r.weekly_rate}</TableCell>
-                  <TableCell>£{r.total_amount}</TableCell>
+                  <TableCell>{formatCurrency(Number(r.weekly_rate), sym)}</TableCell>
+                  <TableCell>{formatCurrency(Number(r.total_amount), sym)}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {getWeeksPaid(Number(r.amount_paid || 0), Number(r.weekly_rate))}/{r.weeks} weeks
                   </TableCell>

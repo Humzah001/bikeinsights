@@ -2,13 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import * as db from "@/lib/db";
 import type { Bike } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
+import { requireTenantApi } from "@/lib/api-session";
 
 export async function GET() {
-  const data = await db.getBikes();
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
+  const data = await db.getBikes(auth.tenantId);
   return NextResponse.json(data);
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireTenantApi();
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const id = body.id || `bike-${uuidv4().slice(0, 8)}`;
@@ -27,7 +33,7 @@ export async function POST(request: NextRequest) {
       notes: body.notes ?? "",
       created_at: new Date().toISOString(),
     };
-    const created = await db.createBike(row);
+    const created = await db.createBike(auth.tenantId, row);
     return NextResponse.json(created);
   } catch (e) {
     console.error(e);

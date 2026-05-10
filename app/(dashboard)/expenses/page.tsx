@@ -22,10 +22,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { Expense, Bike } from "@/lib/types";
 import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { Plus, Trash2 } from "lucide-react";
+import { formatCurrency } from "@/lib/calculations";
+import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 
 const CATEGORIES = ["fuel", "storage", "insurance", "accessories", "cleaning", "other"] as const;
 
 export default function ExpensesPage() {
+  const { currencySymbol } = useTenantPreferences();
+  const sym = currencySymbol || "£";
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -101,7 +105,7 @@ export default function ExpensesPage() {
       <Card>
         <CardContent className="pt-4">
           <p className="text-lg font-semibold">
-            This month ({format(now, "MMMM yyyy")}): £{thisMonthTotal.toFixed(2)}
+            This month ({format(now, "MMMM yyyy")}): {formatCurrency(thisMonthTotal, sym)}
           </p>
         </CardContent>
       </Card>
@@ -156,7 +160,7 @@ export default function ExpensesPage() {
                 </TableCell>
                 <TableCell>{e.category}</TableCell>
                 <TableCell>{e.description}</TableCell>
-                <TableCell>£{e.amount}</TableCell>
+                <TableCell>{formatCurrency(Number(e.amount), sym)}</TableCell>
                 <TableCell>{e.date}</TableCell>
                 <TableCell>
                   <Button

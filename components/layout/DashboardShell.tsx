@@ -4,6 +4,7 @@ import { createContext, useContext, useState } from "react";
 import { SessionIdleGuard } from "@/components/auth/SessionIdleGuard";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { TenantPreferencesProvider } from "@/components/tenant/TenantPreferencesProvider";
 
 const SidebarContext = createContext<{
   sidebarOpen: boolean;
@@ -14,13 +15,19 @@ export function useSidebar() {
   return useContext(SidebarContext);
 }
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+export function DashboardShell({
+  children,
+  showPlatformAdmin,
+}: {
+  children: React.ReactNode;
+  showPlatformAdmin?: boolean;
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <SidebarContext.Provider value={{ sidebarOpen, setSidebarOpen }}>
       <SessionIdleGuard />
       <div className="flex min-h-screen">
-        <Sidebar />
+        <Sidebar showPlatformAdmin={showPlatformAdmin} />
         {/* Mobile overlay when sidebar is open */}
         <button
           type="button"
@@ -31,7 +38,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         />
         <div className="flex min-w-0 flex-1 flex-col">
           <Header />
-          <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+          <main className="flex-1 overflow-auto p-4 md:p-6">
+            <TenantPreferencesProvider>{children}</TenantPreferencesProvider>
+          </main>
         </div>
       </div>
     </SidebarContext.Provider>

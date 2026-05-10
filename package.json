@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:import-csv": "node --env-file=.env.local scripts/import-csv-to-supabase.mjs"
+    "db:import-csv": "node --env-file=.env.local scripts/import-csv-to-supabase.mjs",
+    "supabase:push-invite-email": "node --env-file=.env.local scripts/push-supabase-invite-template.mjs",
+    "storage:upload-email-logo": "node --env-file=.env.local scripts/upload-email-logo-to-supabase.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

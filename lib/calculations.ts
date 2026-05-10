@@ -131,6 +131,34 @@ export function getWeeksWithPendingRent(
   return pending;
 }
 
+/**
+ * True when there is unpaid contract rent and at least one unpaid week’s due date is today or earlier.
+ * Used so “pending payments” lists do not show rentals whose next instalment is not due yet.
+ */
+export function rentalHasUnpaidRentDueOnOrBeforeToday(
+  rental: RentalForPendingRent,
+  today: Date
+): boolean {
+  const rate = Number(rental.weekly_rate || 0);
+  if (rate <= 0) return false;
+  const totalWeeks = parseInt(rental.weeks, 10) || 0;
+  if (totalWeeks <= 0 || !rental.start_date?.trim()) return false;
+  try {
+    getFirstRentDueAnchor(rental);
+  } catch {
+    return false;
+  }
+  const paid = Number(rental.amount_paid || 0);
+  const weeksPaid = getWeeksPaid(paid, rate);
+  if (weeksPaid >= totalWeeks) return false;
+
+  if (getWeeksWithPendingRent(rental, today).length > 0) return true;
+
+  const next = getNextUpcomingRentWeek(rental, today);
+  if (!next) return false;
+  return startOfDay(next.dueDate) <= startOfDay(today);
+}
+
 /** Next unpaid week whose due date is today or in the future. Returns { weekNum, dueDate } or null. */
 export function getNextUpcomingRentWeek(
   rental: RentalForPendingRent,

@@ -21,6 +21,8 @@ import {
 } from "@/lib/calculations";
 import { format } from "date-fns";
 import { Pencil, Plus, Wrench, Wallet, Calendar } from "lucide-react";
+import { getTenantAuthOrRedirect } from "@/lib/auth-server";
+import * as platformDb from "@/lib/db-platform";
 
 export const dynamic = "force-dynamic";
 
@@ -29,12 +31,15 @@ export default async function BikeDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { tenantId } = await getTenantAuthOrRedirect();
+  const tenant = await platformDb.getTenantById(tenantId);
+  const currency = tenant?.currency_symbol?.trim() || "£";
   const { id } = await params;
   const [bikes, rentals, repairs, expenses] = await Promise.all([
-    db.getBikes(),
-    db.getRentals(),
-    db.getRepairs(),
-    db.getExpenses(),
+    db.getBikes(tenantId),
+    db.getRentals(tenantId),
+    db.getRepairs(tenantId),
+    db.getExpenses(tenantId),
   ]);
 
   const bike = bikes.find((b) => b.id === id);
@@ -127,13 +132,13 @@ export default async function BikeDetailPage({
               <p className="text-sm text-muted-foreground">S/N: {bike.serial_number}</p>
             )}
             <p className="mt-2">
-              <span className="font-semibold">£{bike.weekly_rate}</span>
+              <span className="font-semibold">{formatCurrency(Number(bike.weekly_rate || 0), currency)}</span>
               <span className="text-muted-foreground">/week</span>
             </p>
             {bike.purchase_date && (
               <p className="text-sm text-muted-foreground">
                 Purchased: {bike.purchase_date}
-                {bike.purchase_price && ` · £${bike.purchase_price}`}
+                {bike.purchase_price && ` · ${formatCurrency(Number(bike.purchase_price), currency)}`}
               </p>
             )}
             {bike.notes && (
@@ -160,9 +165,9 @@ export default async function BikeDetailPage({
               <CardTitle>Financial summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <p>Collected rent: {formatCurrency(totalRevenue)}</p>
-              <p>Total repairs: {formatCurrency(totalRepairCost)}</p>
-              <p>Total expenses: {formatCurrency(totalExpenseCost)}</p>
+              <p>Collected rent: {formatCurrency(totalRevenue, currency)}</p>
+              <p>Total repairs: {formatCurrency(totalRepairCost, currency)}</p>
+              <p>Total expenses: {formatCurrency(totalExpenseCost, currency)}</p>
               <p
                 className={
                   netProfit >= 0
@@ -170,7 +175,7 @@ export default async function BikeDetailPage({
                     : "font-semibold text-red-600 dark:text-red-400"
                 }
               >
-                Net profit: {formatCurrency(netProfit)}
+                Net profit: {formatCurrency(netProfit, currency)}
               </p>
               {nextRentDue ? (
                 <p className="border-t pt-2 text-sm text-muted-foreground">
@@ -232,7 +237,7 @@ export default async function BikeDetailPage({
                         <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">(partial)</span>
                       ) : null}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{formatCurrency(row.amount)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCurrency(row.amount, currency)}</TableCell>
                     <TableCell>{row.customerName}</TableCell>
                     <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
                       {row.contractStart} → {row.contractEnd}
@@ -286,9 +291,9 @@ export default async function BikeDetailPage({
                       </TableCell>
                       <TableCell>{r.start_date}</TableCell>
                       <TableCell>{r.end_date}</TableCell>
-                      <TableCell>£{r.total_amount}</TableCell>
+                      <TableCell>{formatCurrency(Number(r.total_amount), currency)}</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {formatCurrency(Number(r.amount_paid || 0))}
+                        {formatCurrency(Number(r.amount_paid || 0), currency)}
                       </TableCell>
                       <TableCell>{r.payment_status}</TableCell>
                       <TableCell>{r.status}</TableCell>
@@ -330,7 +335,7 @@ export default async function BikeDetailPage({
                       <TableCell>{r.repair_date}</TableCell>
                       <TableCell>{r.description}</TableCell>
                       <TableCell>{r.repair_shop}</TableCell>
-                      <TableCell>£{r.cost}</TableCell>
+                      <TableCell>{formatCurrency(Number(r.cost), currency)}</TableCell>
                       <TableCell>{r.status}</TableCell>
                     </TableRow>
                   ))
@@ -369,7 +374,7 @@ export default async function BikeDetailPage({
                       <TableCell>{e.date}</TableCell>
                       <TableCell>{e.category}</TableCell>
                       <TableCell>{e.description}</TableCell>
-                      <TableCell>£{e.amount}</TableCell>
+                      <TableCell>{formatCurrency(Number(e.amount), currency)}</TableCell>
                     </TableRow>
                   ))
               )}
