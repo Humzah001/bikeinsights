@@ -23,6 +23,7 @@ import { calculateWeeks, calculateTotalAmount, getDefaultRentCollectionDate, for
 import type { Bike } from "@/lib/types";
 import { format } from "date-fns";
 import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
+import { userFacingThrownError } from "@/lib/user-facing-error";
 
 const schema = z.object({
   bike_id: z.string().min(1, "Select a bike"),
@@ -145,7 +146,7 @@ function AddRentalForm() {
       router.push(`/rentals/${rental.id}`);
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to create rental");
+      toast.error(userFacingThrownError(e, "Could not create rental"));
     } finally {
       setSubmitting(false);
     }

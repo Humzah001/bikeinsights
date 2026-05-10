@@ -181,8 +181,7 @@ export default async function CollectedRentPage() {
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center text-muted-foreground">
-                    No payment rows yet. Record rent from a rental, or run the database migrations for{" "}
-                    <code className="text-xs">rental_payments</code> (and <code className="text-xs">due_on</code> column).
+                    No payments recorded yet. Record rent from a rental&apos;s detail page.
                   </TableCell>
                 </TableRow>
               ) : (

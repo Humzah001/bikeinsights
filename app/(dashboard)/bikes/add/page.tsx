@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { userFacingThrownError } from "@/lib/user-facing-error";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -77,7 +78,7 @@ export default function AddBikePage() {
       router.push(`/bikes/${bike.id}`);
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to add bike");
+      toast.error(userFacingThrownError(e, "Could not add bike"));
     } finally {
       setSubmitting(false);
     }

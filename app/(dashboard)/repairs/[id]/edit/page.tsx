@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { userFacingThrownError } from "@/lib/user-facing-error";
 
 const schema = z.object({
   description: z.string().min(1, "Description required"),
@@ -94,7 +95,7 @@ export default function EditRepairPage() {
       router.push("/repairs");
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update repair");
+      toast.error(userFacingThrownError(e, "Could not update repair"));
     } finally {
       setSubmitting(false);
     }

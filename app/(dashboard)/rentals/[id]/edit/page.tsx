@@ -20,6 +20,7 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { calculateWeeks, calculateTotalAmount } from "@/lib/calculations";
+import { userFacingThrownError } from "@/lib/user-facing-error";
 
 const schema = z.object({
   customer_name: z.string().min(1, "Customer name required"),
@@ -120,7 +121,7 @@ export default function EditRentalPage() {
       router.push(`/rentals/${id}`);
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update rental");
+      toast.error(userFacingThrownError(e, "Could not update rental"));
     } finally {
       setSubmitting(false);
     }

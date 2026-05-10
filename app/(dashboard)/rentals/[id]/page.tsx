@@ -22,6 +22,7 @@ import {
 } from "@/lib/calculations";
 import { format } from "date-fns";
 import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
+import { userFacingThrownError } from "@/lib/user-facing-error";
 
 export default function RentalDetailPage() {
   const params = useParams();
@@ -97,7 +98,7 @@ export default function RentalDetailPage() {
       setRental(updated);
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update");
+      toast.error(userFacingThrownError(e, "Could not update rental"));
     } finally {
       setActioning(false);
     }
@@ -129,7 +130,7 @@ export default function RentalDetailPage() {
       }
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to record payment");
+      toast.error(userFacingThrownError(e, "Could not record payment"));
     } finally {
       setActioning(false);
     }
@@ -144,12 +145,16 @@ export default function RentalDetailPage() {
         body: JSON.stringify({ rental_id: id }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to send");
+        const data = await res.json().catch(() => ({}));
+        const errMsg =
+          typeof (data as { error?: unknown }).error === "string"
+            ? (data as { error: string }).error
+            : "Failed";
+        throw new Error(errMsg);
       }
       toast.success("Reminder email sent");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to send reminder");
+      toast.error(userFacingThrownError(e, "Could not send reminder"));
     } finally {
       setActioning(false);
     }
@@ -185,7 +190,7 @@ export default function RentalDetailPage() {
       }
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to record payment");
+      toast.error(userFacingThrownError(e, "Could not record payment"));
     } finally {
       setActioning(false);
     }

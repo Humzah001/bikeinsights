@@ -10,6 +10,7 @@ import {
   startOfWeek,
   endOfWeek,
   addWeeks,
+  startOfDay,
 } from "date-fns";
 import {
   getCollectedRentAttributedToRange,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/calculations";
 import { DashboardClient } from "./DashboardClient";
 import { getTenantAuthOrRedirect } from "@/lib/auth-server";
+import * as platformDb from "@/lib/db-platform";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +35,27 @@ function rentalOverlapsRange(r: Rental, rangeStart: Date, rangeEnd: Date): boole
   const s = parseISO(r.start_date);
   const e = parseISO(r.end_date);
   return s <= rangeEnd && e >= rangeStart;
+}
+
+/** Same rule as Pending Payments: unpaid weekly rent due on or before `asOf`, excluding overdue rows (listed separately). */
+function rentalCountsAsPaymentDueUnpaid(r: Rental, asOf: Date): boolean {
+  if (
+    r.status === "inactive" ||
+    r.status === "overdue" ||
+    (r.payment_status !== "pending" && r.payment_status !== "partial")
+  ) {
+    return false;
+  }
+  return rentalHasUnpaidRentDueOnOrBeforeToday(
+    {
+      start_date: r.start_date,
+      weeks: r.weeks,
+      weekly_rate: r.weekly_rate,
+      amount_paid: r.amount_paid,
+      rent_collection_date: r.rent_collection_date,
+    },
+    asOf
+  );
 }
 
 /** Collected rent (by weekly due dates in range, FIFO) minus repairs + expenses (by their dates). */
@@ -72,6 +95,8 @@ export default async function DashboardPage({
 }) {
   const sp = await searchParams;
   const { tenantId } = await getTenantAuthOrRedirect();
+  const tenant = await platformDb.getTenantById(tenantId);
+  const workspaceName = tenant?.name?.trim() ?? "";
   const now = new Date();
   const viewAnchor = parseViewMonth(sp.month, now);
   const viewMonthStart = startOfMonth(viewAnchor);
@@ -158,13 +183,15 @@ export default async function DashboardPage({
 
   const activeRentalsLive = rentals.filter((r) => r.status === "active").length;
   const overdueRentals = rentals.filter((r) => r.status === "overdue").length;
-  const pendingPaymentsLive = rentals.filter((r) => r.payment_status === "pending").length;
+  const todayStart = startOfDay(now);
+  const pendingPaymentsLive = rentals.filter((r) => rentalCountsAsPaymentDueUnpaid(r, todayStart)).length;
 
   const rentalsOverlappingView = rentals.filter((r) => rentalOverlapsRange(r, viewMonthStart, viewMonthEnd)).length;
 
+  const viewMonthEndStart = startOfDay(viewMonthEnd);
   const pendingStartedInView = rentals.filter((r) => {
     const s = parseISO(r.start_date);
-    return s >= viewMonthStart && s <= viewMonthEnd && r.payment_status === "pending";
+    return s >= viewMonthStart && s <= viewMonthEnd && rentalCountsAsPaymentDueUnpaid(r, viewMonthEndStart);
   }).length;
 
   const activeRentalsKpi = isViewingCurrentMonth ? activeRentalsLive : rentalsOverlappingView;
@@ -238,6 +265,7 @@ export default async function DashboardPage({
         r.payment_status === "pending" || r.payment_status === "partial" || r.status === "overdue";
       if (!owesPayment) return false;
       if (r.status === "overdue") return true;
+      const asOfDue = isViewingCurrentMonth ? todayStart : viewMonthEndStart;
       return rentalHasUnpaidRentDueOnOrBeforeToday(
         {
           start_date: r.start_date,
@@ -246,7 +274,7 @@ export default async function DashboardPage({
           amount_paid: r.amount_paid,
           rent_collection_date: r.rent_collection_date,
         },
-        new Date()
+        asOfDue
       );
     })
     .sort((a, b) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime())
@@ -266,6 +294,7 @@ export default async function DashboardPage({
 
   return (
     <DashboardClient
+      workspaceName={workspaceName}
       monthSelect={{ value: viewMonthKey, options: monthOptions }}
       isViewingCurrentMonth={isViewingCurrentMonth}
       viewingMonthLabel={monthRangeLabel}
@@ -284,7 +313,7 @@ export default async function DashboardPage({
         rentTitle: "Collected rent",
         rentSubtitle: monthRangeLabel,
         activeSubtitle: isViewingCurrentMonth ? "Live" : "Rental periods overlapping this month",
-        pendingSubtitle: isViewingCurrentMonth ? "Live" : "Started this month, still pending",
+        pendingSubtitle: isViewingCurrentMonth ? "Live" : "Unpaid rent due by month end",
         fleetSubtitle: isViewingCurrentMonth ? undefined : "Today’s fleet (not historical)",
         expensesTitle: "Expenses",
         profitTitle: "Net profit",

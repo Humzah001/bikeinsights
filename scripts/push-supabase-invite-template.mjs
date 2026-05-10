@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Push BikeInsights invite HTML to your hosted Supabase project (replaces dashboard template).
+ * Push My Bike Insights invite HTML to your hosted Supabase project (replaces dashboard template).
  *
  * Requires:
  *   - SUPABASE_ACCESS_TOKEN from https://supabase.com/dashboard/account/tokens
@@ -10,7 +10,7 @@
  *   node --env-file=.env.local scripts/push-supabase-invite-template.mjs
  *
  * Optional env:
- *   INVITE_EMAIL_SUBJECT (default: You're invited to BikeInsights)
+ *   INVITE_EMAIL_SUBJECT (default: You're invited to My Bike Insights)
  */
 
 import fs from "node:fs";
@@ -23,7 +23,7 @@ const templatePath = path.join(root, "supabase/email-templates/invite-user-body-
 
 const token = process.env.SUPABASE_ACCESS_TOKEN;
 const ref = process.env.SUPABASE_PROJECT_REF;
-const subject = process.env.INVITE_EMAIL_SUBJECT ?? "You're invited to BikeInsights";
+const subject = process.env.INVITE_EMAIL_SUBJECT ?? "You're invited to My Bike Insights";
 
 if (!token || !ref) {
   console.error("Missing env: SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF");

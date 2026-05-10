@@ -53,7 +53,7 @@ export function Sidebar({ showPlatformAdmin }: { showPlatformAdmin?: boolean }) 
         {!collapsed && (
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold" onClick={() => setSidebarOpen(false)}>
             <Bike className="h-6 w-6 text-primary" />
-            <span>BikeInsights</span>
+            <span className="leading-tight">My Bike Insights</span>
           </Link>
         )}
         <Button

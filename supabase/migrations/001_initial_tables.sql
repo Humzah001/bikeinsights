@@ -1,4 +1,4 @@
--- BikeInsights – Supabase tables (run in SQL Editor or via migrations)
+-- My Bike Insights – Supabase tables (run in SQL Editor or via migrations)
 -- Run this script in your Supabase project: Dashboard → SQL Editor → New query → Paste → Run
 
 -- Bikes

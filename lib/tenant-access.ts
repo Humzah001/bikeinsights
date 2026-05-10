@@ -18,7 +18,7 @@ export function getTenantLoginBlockReason(tenant: TenantAccessSnapshot): string 
     if (tenant.paid_access_ends_at) {
       const end = new Date(tenant.paid_access_ends_at);
       if (!Number.isNaN(end.getTime()) && Date.now() > end.getTime()) {
-        return "Your subscription period has ended. Please renew to continue using BikeInsights.";
+        return "Your subscription period has ended. Please renew to continue using My Bike Insights.";
       }
     }
     return null;
@@ -28,7 +28,7 @@ export function getTenantLoginBlockReason(tenant: TenantAccessSnapshot): string 
     if (tenant.trial_ends_at) {
       const end = new Date(tenant.trial_ends_at);
       if (!Number.isNaN(end.getTime()) && Date.now() > end.getTime()) {
-        return "Your trial has ended. Please subscribe or contact us to continue using BikeInsights.";
+        return "Your trial has ended. Please subscribe or contact us to continue using My Bike Insights.";
       }
     }
     return null;

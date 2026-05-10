@@ -20,6 +20,7 @@ import {
   normalizeTenantCurrencySymbol,
   type TenantCurrencySymbol,
 } from "@/lib/tenant-currency";
+import { userFacingApiError } from "@/lib/user-facing-error";
 
 export default function SettingsPage() {
   const prefs = useTenantPreferences();
@@ -27,7 +28,6 @@ export default function SettingsPage() {
   const [ownerName, setOwnerName] = useState("");
   const [currency, setCurrency] = useState<TenantCurrencySymbol>("£");
   const [defaultWeeklyRate, setDefaultWeeklyRate] = useState("80");
-  const [notificationEmail, setNotificationEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [backingUp, setBackingUp] = useState(false);
 
@@ -37,14 +37,12 @@ export default function SettingsPage() {
     setOwnerName(prefs.ownerName);
     setCurrency(normalizeTenantCurrencySymbol(prefs.currencySymbol));
     setDefaultWeeklyRate(String(prefs.defaultWeeklyRate));
-    setNotificationEmail(prefs.notificationEmail);
   }, [
     prefs.loading,
     prefs.businessName,
     prefs.ownerName,
     prefs.currencySymbol,
     prefs.defaultWeeklyRate,
-    prefs.notificationEmail,
   ]);
 
   async function handleSaveSettings() {
@@ -64,12 +62,11 @@ export default function SettingsPage() {
           ownerName,
           currencySymbol: currency,
           defaultWeeklyRate: weekly,
-          notificationEmail,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(typeof data.error === "string" ? data.error : "Could not save settings");
+        toast.error(userFacingApiError(data.error, "Could not save settings"));
         return;
       }
       await prefs.refresh();
@@ -101,7 +98,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `bikeinsights-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.download = `my-bike-insights-backup-${new Date().toISOString().slice(0, 10)}.zip`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Backup downloaded");
@@ -130,7 +127,7 @@ export default function SettingsPage() {
           <CardTitle>Business</CardTitle>
           <CardDescription>
             Business name is stored on your workspace. Currency and default weekly rate apply across your dashboard for
-            everyone in this tenant.
+            everyone who uses this workspace.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -192,29 +189,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Notifications</CardTitle>
-          <CardDescription>Email for reminders.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="notificationEmail">Notification email</Label>
-            <Input
-              id="notificationEmail"
-              type="email"
-              value={notificationEmail}
-              onChange={(e) => setNotificationEmail(e.target.value)}
-              placeholder="you@example.com"
-              disabled={prefs.loading}
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Configure RESEND_API_KEY and NOTIFICATION_FROM_EMAIL in .env.local for email reminders.
-          </p>
-        </CardContent>
-      </Card>
-
       <div className="flex flex-wrap gap-3">
         <Button onClick={() => void handleSaveSettings()} disabled={saving || prefs.loading}>
           {saving ? "Saving…" : "Save settings"}
@@ -231,7 +205,8 @@ export default function SettingsPage() {
             {backingUp ? "Preparing…" : "Download backup (ZIP)"}
           </Button>
           <p className="text-sm text-muted-foreground">
-            Backup downloads all CSV files as a ZIP. To restore, replace files in /data/ and restart.
+            Backup downloads your records as a ZIP of spreadsheets. Restoring from a backup is handled by your hosting or
+            support team if you use one.
           </p>
         </CardContent>
       </Card>

@@ -6,7 +6,14 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 export function createBrowserSupabase(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anon) return null;
+  if (!url || !anon) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[bikeinsights] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — browser auth features are disabled."
+      );
+    }
+    return null;
+  }
   return createClient(url, anon, {
     auth: {
       detectSessionInUrl: true,

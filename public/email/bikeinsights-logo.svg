@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 136 24" role="img" aria-label="BikeInsights">
-  <!-- Matches app sidebar (Lucide Bike + BikeInsights, primary-colored stroke/text ~ oklch(0.205 0 0)) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 24" role="img" aria-label="My Bike Insights">
+  <!-- Sidebar / email wordmark + bike icon (matches app sidebar) -->
   <g fill="none" stroke="#242424" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="18.5" cy="17.5" r="3.5"/>
     <circle cx="5.5" cy="17.5" r="3.5"/>
@@ -11,8 +11,8 @@
     y="12"
     dominant-baseline="central"
     font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-    font-size="15"
+    font-size="13"
     font-weight="600"
     fill="#242424"
-  >BikeInsights</text>
+  >My Bike Insights</text>
 </svg>

@@ -17,7 +17,9 @@ function AuthCallbackInner() {
   useEffect(() => {
     const sb = createBrowserSupabase();
     if (!sb) {
-      setError("Add NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local (Supabase → Settings → API → anon key).");
+      setError(
+        "We couldn’t finish signing you in in your browser. Open the invitation link from your email again. If it keeps happening, contact the person who invited you."
+      );
       return;
     }
 
@@ -53,7 +55,7 @@ function AuthCallbackInner() {
         if (!appToken) {
           doneRef.current = true;
           setError(
-            "Could not read your workspace invite link (missing token). Ask an admin to send a new invite from Platform admin, and confirm Supabase Redirect URLs include https://your-domain/auth/callback with a wildcard so query parameters are allowed."
+            "This invitation link is incomplete or no longer valid. Ask your administrator to send you a new invitation email."
           );
           return;
         }
@@ -82,7 +84,7 @@ function AuthCallbackInner() {
     const timer2 = window.setTimeout(() => {
       if (!doneRef.current) {
         setError(
-          "Timed out reading your Supabase session. Confirm Redirect URLs include this page (e.g. http://localhost:3001/auth/callback and https://your-domain/auth/callback)."
+          "Signing in is taking too long. Close this tab and open the invitation link from your email again."
         );
       }
     }, 8000);
@@ -109,7 +111,7 @@ function AuthCallbackInner() {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>Completing invitation…</CardTitle>
-        <CardDescription>Connecting your Supabase sign-in to your workspace.</CardDescription>
+        <CardDescription>Connecting your sign-in to your workspace.</CardDescription>
       </CardHeader>
     </Card>
   );

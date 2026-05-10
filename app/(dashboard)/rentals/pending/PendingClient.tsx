@@ -101,11 +101,12 @@ export function PendingClient({
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table className="min-w-[600px]">
+          <Table className="min-w-[680px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Bike</TableHead>
                 <TableHead>Customer</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>End date</TableHead>
                 <TableHead>Days overdue</TableHead>
                 <TableHead>Paid</TableHead>
@@ -116,7 +117,7 @@ export function PendingClient({
             <TableBody>
               {overdueRentals.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No overdue rentals
                   </TableCell>
                 </TableRow>
@@ -124,16 +125,18 @@ export function PendingClient({
                 overdueRentals.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.bike_name}</TableCell>
+                    <TableCell>{r.customer_name}</TableCell>
                     <TableCell>
-                      <div>{r.customer_name}</div>
-                      {r.customer_phone && (
+                      {r.customer_phone?.trim() ? (
                         <a
-                          href={`tel:${r.customer_phone}`}
+                          href={`tel:${r.customer_phone.trim()}`}
                           className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                         >
-                          <Phone className="h-3 w-3" />
-                          {r.customer_phone}
+                          <Phone className="h-3 w-3 shrink-0" />
+                          {r.customer_phone.trim()}
                         </a>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
                     <TableCell>{r.end_date}</TableCell>
@@ -153,9 +156,9 @@ export function PendingClient({
                             Mark completed
                           </Link>
                         </Button>
-                        {r.customer_phone && (
+                        {r.customer_phone?.trim() && (
                           <Button variant="ghost" size="sm" asChild>
-                            <a href={`tel:${r.customer_phone}`}>
+                            <a href={`tel:${r.customer_phone.trim()}`}>
                               <Phone className="mr-1 h-3 w-3" />
                               Call
                             </a>
@@ -181,11 +184,12 @@ export function PendingClient({
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table className="min-w-[600px]">
+          <Table className="min-w-[680px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Bike</TableHead>
                 <TableHead>Customer</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>Paid</TableHead>
                 <TableHead>Remaining</TableHead>
                 <TableHead>Rent due</TableHead>
@@ -196,7 +200,7 @@ export function PendingClient({
             <TableBody>
               {pendingPaymentRentals.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No pending payments
                   </TableCell>
                 </TableRow>
@@ -221,16 +225,18 @@ export function PendingClient({
                   return (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium">{r.bike_name}</TableCell>
+                      <TableCell>{r.customer_name}</TableCell>
                       <TableCell>
-                        <div>{r.customer_name}</div>
-                        {r.customer_phone && (
+                        {r.customer_phone?.trim() ? (
                           <a
-                            href={`tel:${r.customer_phone}`}
+                            href={`tel:${r.customer_phone.trim()}`}
                             className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                           >
-                            <Phone className="h-3 w-3" />
-                            {r.customer_phone}
+                            <Phone className="h-3 w-3 shrink-0" />
+                            {r.customer_phone.trim()}
                           </a>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
                       <TableCell>

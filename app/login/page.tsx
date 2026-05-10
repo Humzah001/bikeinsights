@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Bike } from "lucide-react";
 import { toast } from "sonner";
 import { SupabaseInviteFromHash } from "@/app/login/SupabaseInviteFromHash";
+import { userFacingApiError } from "@/lib/user-facing-error";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -49,10 +50,10 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 402 && data?.error) {
-          toast.error(data.error);
+          toast.error(userFacingApiError(data.error, "Your workspace is not available to sign in right now."));
           return;
         }
-        toast.error(data.error || "Sign in failed");
+        toast.error(userFacingApiError(data.error, "Sign in failed"));
         return;
       }
       toast.success("Signed in");
@@ -72,10 +73,10 @@ function LoginForm() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Bike className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl">BikeInsights</CardTitle>
+          <CardTitle className="text-2xl">My Bike Insights</CardTitle>
           <CardDescription>
-            Sign in with your invited email and password. Buildit4me operators can leave email blank and use the shared
-            admin password only.
+            Sign in with your work email and the password you set when you joined. If your organization uses a shared
+            access option, follow the instructions they gave you.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -88,7 +89,12 @@ function LoginForm() {
           ) : null}
           {workspaceBlocked && workspaceBlockedDetail ? (
             <Alert className="mb-4" variant="destructive">
-              <AlertDescription>{workspaceBlockedDetail}</AlertDescription>
+              <AlertDescription>
+                {userFacingApiError(
+                  workspaceBlockedDetail,
+                  "Your workspace is not available to sign in right now."
+                )}
+              </AlertDescription>
             </Alert>
           ) : null}
           {invited ? (

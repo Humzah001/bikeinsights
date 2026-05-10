@@ -32,7 +32,7 @@ import {
 } from "recharts";
 import { formatCurrency, getWeeksPaid } from "@/lib/calculations";
 import { DashboardMonthSelect } from "@/components/dashboard/DashboardMonthSelect";
-import { AlertCircle, AlertTriangle, Info } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, Phone } from "lucide-react";
 import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 
 const STATUS_COLORS = {
@@ -53,7 +53,16 @@ const STATUS_COLORS = {
 
 const PIE_COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#6b7280", "#ef4444"];
 
+function workspaceDashboardTitle(businessName: string, ownerName: string, workspaceName: string): string {
+  const raw = businessName.trim() || ownerName.trim() || workspaceName.trim();
+  if (!raw) return "Dashboard";
+  const possessive = /s$/i.test(raw) ? `${raw}'` : `${raw}'s`;
+  return `${possessive} Dashboard`;
+}
+
 interface DashboardClientProps {
+  /** Tenant workspace name from DB (fallback when Settings names are empty). */
+  workspaceName: string;
   monthSelect: { value: string; options: { value: string; label: string }[] };
   isViewingCurrentMonth: boolean;
   viewingMonthLabel: string;
@@ -178,6 +187,7 @@ function ProfitSummaryStrip({
 }
 
 export function DashboardClient({
+  workspaceName,
   monthSelect,
   isViewingCurrentMonth,
   viewingMonthLabel,
@@ -205,8 +215,9 @@ export function DashboardClient({
   pendingRepairCount,
   pieChartTitles,
 }: DashboardClientProps) {
-  const { currencySymbol } = useTenantPreferences();
+  const { currencySymbol, businessName, ownerName } = useTenantPreferences();
   const sym = currencySymbol || "£";
+  const dashboardHeading = workspaceDashboardTitle(businessName, ownerName, workspaceName);
 
   const bikeStatusPie = [
     { name: "Available", value: bikeStatusCounts.available, color: PIE_COLORS[0] },
@@ -230,7 +241,7 @@ export function DashboardClient({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-bold">{dashboardHeading}</h1>
         <DashboardMonthSelect value={monthSelect.value} options={monthSelect.options} />
       </div>
 
@@ -634,11 +645,12 @@ export function DashboardClient({
             </Button>
           </CardHeader>
           <CardContent className="overflow-x-auto">
-            <Table className="min-w-[400px]">
+            <Table className="min-w-[480px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Bike</TableHead>
                   <TableHead>Customer</TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead>Paid</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
@@ -647,12 +659,18 @@ export function DashboardClient({
                 {pendingRentals.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.bike_name}</TableCell>
+                    <TableCell>{r.customer_name}</TableCell>
                     <TableCell>
-                      {r.customer_name}
-                      {r.customer_phone && (
-                        <a href={`tel:${r.customer_phone}`} className="ml-1 text-xs text-primary hover:underline">
-                          {r.customer_phone}
+                      {r.customer_phone?.trim() ? (
+                        <a
+                          href={`tel:${r.customer_phone.trim()}`}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <Phone className="h-3 w-3 shrink-0" />
+                          {r.customer_phone.trim()}
                         </a>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">

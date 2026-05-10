@@ -14,8 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BikeInsights",
+  title: "My Bike Insights",
   description: "Bike rental fleet management",
+  icons: {
+    icon: [{ url: "/icon.ico", type: "image/x-icon", sizes: "256x256" }],
+    shortcut: [{ url: "/icon.ico", type: "image/x-icon", sizes: "256x256" }],
+  },
 };
 
 export default function RootLayout({

@@ -4,7 +4,7 @@ import { hashPassword, verifyPassword } from "@/lib/password";
 import { getSupabase } from "@/lib/supabase/server";
 import { getTenantLoginBlockReason } from "@/lib/tenant-access";
 import { loginSessionTenantUser } from "@/lib/session";
-import { validateInviteeProfile } from "@/lib/invite-profile";
+import { validateInviteAcceptProfile } from "@/lib/invite-profile";
 
 function parseInvitePasswords(body: {
   password?: unknown;
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     const displayNameRaw = typeof body.displayName === "string" ? body.displayName.trim() : "";
     const phoneRaw = typeof body.phone === "string" ? body.phone : "";
 
-    const profileErr = validateInviteeProfile(invite, displayNameRaw, phoneRaw);
+    const profileErr = validateInviteAcceptProfile(displayNameRaw, phoneRaw);
     if (profileErr) {
       return NextResponse.json({ error: profileErr }, { status: 400 });
     }

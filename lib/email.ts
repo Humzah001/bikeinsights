@@ -22,7 +22,7 @@ export async function sendReminderEmail(params: {
   const { data, error } = await resend.emails.send({
     from: FROM_EMAIL,
     to: [to],
-    subject: `BikeInsights – Payment reminder: ${bikeName}`,
+    subject: `My Bike Insights – Payment reminder: ${bikeName}`,
     html: `
       <p>Hi ${customerName},</p>
       <p>This is a friendly reminder about your bike rental.</p>
@@ -30,7 +30,7 @@ export async function sendReminderEmail(params: {
       <p><strong>Rental period:</strong> ${startDate} to ${endDate}</p>
       <p><strong>Amount owed:</strong> ${amountOwed}</p>
       <p>Please arrange payment at your earliest convenience.</p>
-      <p>Thank you,<br/>BikeInsights</p>
+      <p>Thank you,<br/>My Bike Insights</p>
     `,
   });
   if (error) return { ok: false, error: error.message };

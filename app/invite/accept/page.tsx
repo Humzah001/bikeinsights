@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { createBrowserSupabase } from "@/lib/supabase-browser";
 import { normalizePhoneDigits } from "@/lib/phone-normalize";
+import { userFacingApiError } from "@/lib/user-facing-error";
 
 function AcceptForm() {
   const router = useRouter();
@@ -19,13 +20,11 @@ function AcceptForm() {
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
-  const [anonMissing, setAnonMissing] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     const sb = createBrowserSupabase();
     if (!sb) {
-      setAnonMissing(true);
       return;
     }
     void sb.auth.getSession().then(({ data: { session } }) => {
@@ -42,7 +41,7 @@ function AcceptForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!token) {
-      toast.error("Missing invitation token");
+      toast.error("This invite link is incomplete. Open the full link from your invitation email.");
       return;
     }
     if (password.length < 8) {
@@ -79,10 +78,10 @@ function AcceptForm() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 402 && data?.error) {
-          toast.error(data.error);
+          toast.error(userFacingApiError(data.error, "Your workspace is not available yet."));
           return;
         }
-        toast.error(data.error || "Could not complete invitation");
+        toast.error(userFacingApiError(data.error, "Could not complete invitation"));
         return;
       }
 
@@ -109,7 +108,7 @@ function AcceptForm() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Invalid link</CardTitle>
-          <CardDescription>Open the invitation link from your email (it includes a token).</CardDescription>
+          <CardDescription>Use the complete invitation link from your email.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -121,22 +120,14 @@ function AcceptForm() {
         <CardTitle>Set up your account</CardTitle>
         <CardDescription>
           {accessToken
-            ? "Your email is verified. Enter the same name and phone number your administrator provided, then choose your BikeInsights password."
-            : "Enter the same name and phone number your administrator provided, then choose your BikeInsights password. If you used the invitation email link, your browser should connect automatically."}
+            ? "Your email is verified. Choose how your name and phone appear in the workspace, then set your My Bike Insights password."
+            : "Choose how your name and phone appear in the workspace, then set your My Bike Insights password. If you used the invitation email link, your browser should connect automatically."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {anonMissing ? (
-          <p className="text-sm text-muted-foreground">
-            Set <code className="rounded bg-muted px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in{" "}
-            <code className="rounded bg-muted px-1">.env.local</code> so email invitation links can finish in the browser
-            (Project → Settings → API → anon key). If you have a manual invite link only, you can still set your password
-            below.
-          </p>
-        ) : null}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Full name</Label>
+            <Label htmlFor="name">Your name</Label>
             <Input
               id="name"
               required
@@ -145,11 +136,11 @@ function AcceptForm() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               disabled={loading}
-              placeholder="As shared with your administrator"
+              placeholder="How you want to appear in the app"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone number</Label>
+            <Label htmlFor="phone">Your phone number</Label>
             <Input
               id="phone"
               type="tel"
@@ -158,7 +149,7 @@ function AcceptForm() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               disabled={loading}
-              placeholder="Same number your administrator entered"
+              placeholder="Mobile or contact number"
             />
           </div>
           <div className="space-y-2">

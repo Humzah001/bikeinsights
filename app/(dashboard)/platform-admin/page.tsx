@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DEFAULT_TRIAL_DAYS } from "@/lib/buildit4me-tenant";
 import { normalizePhoneDigits } from "@/lib/phone-normalize";
+import { userFacingApiError } from "@/lib/user-facing-error";
 import { cn } from "@/lib/utils";
 
 type InvitationRow = {
@@ -62,9 +63,11 @@ type TenantRow = {
 
 function InvitesMenu({
   invitations,
+  members,
   onRevoke,
 }: {
   invitations: InvitationRow[];
+  members: TenantRow["members"];
   onRevoke: (id: string) => void;
 }) {
   const list = invitations ?? [];
@@ -88,12 +91,23 @@ function InvitesMenu({
           const expired = !accepted && new Date(inv.expires_at) < new Date();
           const variant = accepted ? "default" : expired ? "outline" : "secondary";
           const statusLabel = accepted ? "Accepted" : expired ? "Expired" : "Pending";
+          const emailKey = inv.email.trim().toLowerCase();
+          const memberProfile = accepted
+            ? members.find((m) => m.email.trim().toLowerCase() === emailKey)
+            : undefined;
           return (
             <div key={inv.id} className="border-b border-border px-2 py-2 last:border-0">
               <div className="break-all text-xs font-medium">{inv.email}</div>
               {inv.invitee_name || inv.invitee_phone ? (
-                <div className="text-[11px] text-muted-foreground">
-                  {[inv.invitee_name, inv.invitee_phone].filter(Boolean).join(" · ")}
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                  <span className="font-medium text-foreground/80">Contact at invite:</span>{" "}
+                  {[inv.invitee_name, inv.invitee_phone].filter(Boolean).join(" · ") || "—"}
+                </div>
+              ) : null}
+              {accepted && memberProfile ? (
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                  <span className="font-medium text-foreground/80">Profile they chose:</span>{" "}
+                  {[memberProfile.display_name || "—", memberProfile.phone?.trim() || "—"].join(" · ")}
                 </div>
               ) : null}
               <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -154,9 +168,14 @@ function MembersMenu({
         {list.map((m) => (
           <div key={m.user_id} className="border-b border-border px-2 py-2 last:border-0">
             <div className="break-all text-xs font-medium">{m.email}</div>
-            <div className="text-[11px] text-muted-foreground">
-              {[m.display_name, m.phone].filter(Boolean).join(" · ") || m.role}
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
+              <span className="font-medium text-foreground/80">Name:</span> {m.display_name.trim() || "—"}
             </div>
+            <div className="text-[11px] text-muted-foreground">
+              <span className="font-medium text-foreground/80">Phone:</span>{" "}
+              {m.phone?.trim() || "—"}
+            </div>
+            <div className="text-[10px] text-muted-foreground">Role: {m.role}</div>
             <Button
               type="button"
               variant="ghost"
@@ -215,11 +234,11 @@ export default function PlatformAdminPage() {
   async function sendInvite(e: React.FormEvent) {
     e.preventDefault();
     if (inviteOwnerName.trim().length < 2) {
-      toast.error("Enter the invitee's full name.");
+      toast.error("Enter a reference contact name for this invite.");
       return;
     }
     if (normalizePhoneDigits(inviteOwnerPhone).length < 8) {
-      toast.error("Enter a phone number with at least 8 digits.");
+      toast.error("Enter a reference phone number with at least 8 digits.");
       return;
     }
     setInviting(true);
@@ -243,21 +262,19 @@ export default function PlatformAdminPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "Invite failed");
+        toast.error(userFacingApiError(data.error, "Invite failed"));
         return;
       }
       if (!data.emailSent) {
-        const bits = [data.emailError, data.emailHint];
-        if (data.emailStatus != null) bits.push(`HTTP ${data.emailStatus}`);
-        if (data.emailCode) bits.push(String(data.emailCode));
-        const detail = bits.filter(Boolean).join(" ");
-        toast.error(detail || "Supabase did not send the invitation email.");
+        toast.error(
+          "We couldn’t send the invitation email automatically. Confirm mail settings with your host, or share the invite link manually."
+        );
         if (data.inviteLink) {
           void navigator.clipboard.writeText(data.inviteLink);
           toast.message("Invite link copied — you can share it manually.");
         }
       } else {
-        toast.success("Invitation sent via Supabase (check the recipient's inbox)");
+        toast.success("Invitation sent (ask the recipient to check their inbox)");
       }
       setInviteEmail("");
       setInviteTenantName("");
@@ -282,7 +299,7 @@ export default function PlatformAdminPage() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      toast.error(typeof data.error === "string" ? data.error : "Update failed");
+      toast.error(userFacingApiError(data.error, "Update failed"));
       throw new Error("patch failed");
     }
     await load({ silent: true });
@@ -344,7 +361,7 @@ export default function PlatformAdminPage() {
       const res = await fetch(`/api/platform-admin/invitations/${invitationId}`, { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(typeof data.error === "string" ? data.error : "Could not revoke invitation");
+        toast.error(userFacingApiError(data.error, "Could not revoke invitation"));
         return;
       }
       toast.success("Invitation revoked");
@@ -357,7 +374,7 @@ export default function PlatformAdminPage() {
   async function deleteWorkspace(tenantId: string, tenantName: string) {
     if (
       !confirm(
-        `Delete workspace “${tenantName}”, all of its data, and remove invited users from Auth and the database? This cannot be undone.`
+        `Delete workspace “${tenantName}”, its data, and related sign-in access for invited users? This cannot be undone.`
       )
     ) {
       return;
@@ -366,7 +383,7 @@ export default function PlatformAdminPage() {
       const res = await fetch(`/api/platform-admin/tenants/${tenantId}`, { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(typeof data.error === "string" ? data.error : "Could not delete workspace");
+        toast.error(userFacingApiError(data.error, "Could not delete workspace"));
         return;
       }
       toast.success("Workspace deleted");
@@ -381,8 +398,7 @@ export default function PlatformAdminPage() {
       <div>
         <h1 className="text-2xl font-bold">Platform admin</h1>
         <p className="text-muted-foreground">
-          Invite operators to their own workspace and mark who has paid an active subscription (manual until Stripe is
-          wired).
+          Invite operators to their own workspace and record billing status manually for now.
         </p>
       </div>
 
@@ -392,8 +408,9 @@ export default function PlatformAdminPage() {
           <CardDescription>
             Billing is manual: set trial or active when inviting, optionally limit how long trial or paid access lasts.
             After that date users cannot sign in until you extend paid days or change billing. Use Pause to block a
-            workspace immediately. Invitation emails use Supabase Auth — add your app URL under Authentication → URL
-            Configuration → Redirect URLs (including <code className="rounded bg-muted px-1">/auth/callback</code>).
+            workspace immediately. The contact name and phone you enter are for your records only — when they accept,
+            they choose their own profile name and phone (shown under Members and on accepted invites). Configure your
+            email sign-in provider to allow your site URLs and invitation completion redirects.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -421,25 +438,25 @@ export default function PlatformAdminPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="inviteOwnerName">Owner full name</Label>
+                <Label htmlFor="inviteOwnerName">Contact name (reference)</Label>
                 <Input
                   id="inviteOwnerName"
                   required
                   minLength={2}
                   value={inviteOwnerName}
                   onChange={(e) => setInviteOwnerName(e.target.value)}
-                  placeholder="Invited person's name"
+                  placeholder="Who you’re inviting — not required to match their signup"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="inviteOwnerPhone">Owner phone</Label>
+                <Label htmlFor="inviteOwnerPhone">Contact phone (reference)</Label>
                 <Input
                   id="inviteOwnerPhone"
                   type="tel"
                   required
                   value={inviteOwnerPhone}
                   onChange={(e) => setInviteOwnerPhone(e.target.value)}
-                  placeholder="+44 …"
+                  placeholder="Their number on file — they enter their own at signup"
                 />
               </div>
             </div>
@@ -502,7 +519,7 @@ export default function PlatformAdminPage() {
           {loading ? (
             <p className="text-muted-foreground">Loading…</p>
           ) : tenants.length === 0 ? (
-            <p className="text-muted-foreground">No tenants yet.</p>
+            <p className="text-muted-foreground">No workspaces yet.</p>
           ) : (
             <Table className="table-fixed text-sm">
               <TableHeader>
@@ -556,7 +573,11 @@ export default function PlatformAdminPage() {
                           : "—"}
                     </TableCell>
                     <TableCell className="min-w-0 py-3">
-                      <InvitesMenu invitations={t.invitations ?? []} onRevoke={revokeInvitation} />
+                      <InvitesMenu
+                        invitations={t.invitations ?? []}
+                        members={t.members ?? []}
+                        onRevoke={revokeInvitation}
+                      />
                     </TableCell>
                     <TableCell className="min-w-0 py-3">
                       <MembersMenu members={t.members ?? []} tenantId={t.id} onRemove={removeMember} />
