@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import * as db from "@/lib/db";
 import { BikeStatusBadge } from "@/components/bikes/BikeStatusBadge";
+import { BikeWeeklyRentLines, EbikeSpecsPanel } from "@/components/bikes/EbikeSpecsPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -13,14 +14,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Bike, Rental, Repair, Expense } from "@/lib/types";
 import {
   formatCurrency,
   getEarliestNextRentDueAmongRentals,
   impliedWeeklyRentCollectionRows,
 } from "@/lib/calculations";
 import { format } from "date-fns";
-import { Pencil, Plus, Wrench, Wallet, Calendar } from "lucide-react";
+import { ArrowLeft, Pencil, Wrench, Wallet, Calendar } from "lucide-react";
+import { BackNavButton } from "@/components/navigation/BackNavButton";
+import { listBikeMediaGallery } from "@/lib/bike-media-urls";
 import { getTenantAuthOrRedirect } from "@/lib/auth-server";
 import * as platformDb from "@/lib/db-platform";
 
@@ -35,6 +37,7 @@ export default async function BikeDetailPage({
   const tenant = await platformDb.getTenantById(tenantId);
   const currency = tenant?.currency_symbol?.trim() || "£";
   const { id } = await params;
+
   const [bikes, rentals, repairs, expenses] = await Promise.all([
     db.getBikes(tenantId),
     db.getRentals(tenantId),
@@ -44,6 +47,14 @@ export default async function BikeDetailPage({
 
   const bike = bikes.find((b) => b.id === id);
   if (!bike) notFound();
+
+  const gallery = await listBikeMediaGallery(tenantId, id);
+  const firstImage = gallery.find((g) => g.media_kind === "image" && g.url);
+  const firstVideo = gallery.find((g) => g.media_kind === "video" && g.url);
+  const heroGallery = firstImage ?? firstVideo ?? null;
+  const restGallery = heroGallery
+    ? gallery.filter((g) => g.id !== heroGallery.id && g.url)
+    : gallery.filter((g) => g.url);
 
   const bikeRentals = rentals.filter((r) => r.bike_id === id);
   const bikeRepairs = repairs.filter((r) => r.bike_id === id);
@@ -64,17 +75,16 @@ export default async function BikeDetailPage({
     (r) => r.status === "active" || r.status === "overdue" || r.status === "inactive"
   );
 
-  const imageSrc = bike.image_filename
-    ? `/uploads/bikes/${bike.image_filename}`
-    : null;
+  const legacyImageSrc = bike.image_filename ? `/uploads/bikes/${bike.image_filename}` : null;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/bikes">← Bikes</Link>
-          </Button>
+          <BackNavButton href="/bikes">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Bikes
+          </BackNavButton>
           <h1 className="text-2xl font-bold">{bike.name}</h1>
           <BikeStatusBadge status={bike.status} />
         </div>
@@ -109,9 +119,24 @@ export default async function BikeDetailPage({
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <div className="aspect-video w-full overflow-hidden rounded-t-lg bg-muted">
-            {imageSrc ? (
+            {heroGallery?.url && heroGallery.media_kind === "image" ? (
+          // eslint-disable-next-line @next/next/no-img-element -- time-limited signed URL from Supabase Storage
+              <img
+                src={heroGallery.url}
+                alt={bike.name}
+                className="h-full w-full object-cover"
+              />
+            ) : heroGallery?.url && heroGallery.media_kind === "video" ? (
+              <video
+                src={heroGallery.url}
+                className="h-full w-full object-cover"
+                controls
+                playsInline
+                preload="metadata"
+              />
+            ) : legacyImageSrc ? (
               <Image
-                src={imageSrc}
+                src={legacyImageSrc}
                 alt={bike.name}
                 width={600}
                 height={340}
@@ -131,10 +156,9 @@ export default async function BikeDetailPage({
             {bike.serial_number && (
               <p className="text-sm text-muted-foreground">S/N: {bike.serial_number}</p>
             )}
-            <p className="mt-2">
-              <span className="font-semibold">{formatCurrency(Number(bike.weekly_rate || 0), currency)}</span>
-              <span className="text-muted-foreground">/week</span>
-            </p>
+            <div className="mt-2">
+              <BikeWeeklyRentLines bike={bike} currencySymbol={currency} />
+            </div>
             {bike.purchase_date && (
               <p className="text-sm text-muted-foreground">
                 Purchased: {bike.purchase_date}
@@ -196,6 +220,39 @@ export default async function BikeDetailPage({
 
         </div>
       </div>
+
+      <EbikeSpecsPanel bike={bike} />
+
+      {restGallery.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>More photos & videos</CardTitle>
+            <CardDescription>More uploads for this bike. Order matches your library sort.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {restGallery.map((item) => (
+                <div key={item.id} className="overflow-hidden rounded-lg border bg-muted/40">
+                  <div className="aspect-video bg-muted">
+                    {item.media_kind === "video" ? (
+                      <video
+                        src={item.url!}
+                        className="h-full w-full object-cover"
+                        controls
+                        playsInline
+                        preload="metadata"
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element -- signed Supabase URL
+                      <img src={item.url!} alt="" className="h-full w-full object-cover" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

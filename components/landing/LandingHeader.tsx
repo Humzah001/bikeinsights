@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { backNavButtonClassName } from "@/components/navigation/BackNavButton";
 import { cn } from "@/lib/utils";
 
 const SCROLL_THRESHOLD_PX = 16;
@@ -20,6 +21,7 @@ const SECONDARY_NAV = [
   { href: "#features", label: "Features" },
   { href: "#preview", label: "Product" },
   { href: "#testimonials", label: "Stories" },
+  { href: "#pricing", label: "Plans" },
   { href: "#faq", label: "FAQ" },
   { href: "#contact", label: "Contact" },
 ] as const;
@@ -74,11 +76,7 @@ export function LandingHeader() {
             >
               <Link href="#get-started">Get started</Link>
             </Button>
-            <Button
-              size="sm"
-              className="shrink-0 font-semibold shadow-sm ring-1 ring-primary/15 dark:ring-primary/25"
-              asChild
-            >
+            <Button size="sm" className={cn("shrink-0", backNavButtonClassName)} asChild>
               <Link href="/login">Open app</Link>
             </Button>
           </nav>
@@ -93,7 +91,7 @@ export function LandingHeader() {
             >
               <Link href="#get-started">Start</Link>
             </Button>
-            <Button size="sm" className="px-2.5 font-semibold shadow-sm sm:px-3" asChild>
+            <Button size="sm" className={cn("px-2.5 sm:px-3", backNavButtonClassName)} asChild>
               <Link href="/login">Open app</Link>
             </Button>
             <Button
@@ -133,7 +131,7 @@ export function LandingHeader() {
                 Get started
               </Link>
             </Button>
-            <Button size="lg" className="h-11 w-full justify-center font-semibold shadow-md" asChild>
+            <Button size="lg" className={cn("h-11 w-full justify-center shadow-md", backNavButtonClassName)} asChild>
               <Link href="/login" onClick={() => setMobileOpen(false)}>
                 Open app
               </Link>

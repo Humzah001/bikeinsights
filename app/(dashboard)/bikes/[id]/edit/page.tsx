@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { BackNavButton } from "@/components/navigation/BackNavButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,19 +21,23 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import type { Bike } from "@/lib/types";
+import { EbikeFormFields, ebikeZodSchema } from "@/components/bikes/EbikeFormFields";
+import { BikeMediaPanel } from "@/components/bikes/BikeMediaPanel";
+import { defaultRentPackages } from "@/lib/rent-packages";
 
-const schema = z.object({
-  name: z.string().min(1, "Name is required"),
-  brand: z.string(),
-  model: z.string(),
-  color: z.string(),
-  serial_number: z.string(),
-  status: z.enum(["available", "rented", "under_repair", "retired"]),
-  purchase_date: z.string(),
-  purchase_price: z.string(),
-  weekly_rate: z.string(),
-  notes: z.string(),
-});
+const schema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    brand: z.string(),
+    model: z.string(),
+    color: z.string(),
+    serial_number: z.string(),
+    status: z.enum(["available", "rented", "under_repair", "retired"]),
+    purchase_date: z.string(),
+    purchase_price: z.string(),
+    notes: z.string(),
+  })
+  .merge(ebikeZodSchema);
 
 type FormData = z.infer<typeof schema>;
 
@@ -48,6 +53,8 @@ export default function EditBikePage() {
     handleSubmit,
     setValue,
     watch,
+    getValues,
+    control,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -67,8 +74,14 @@ export default function EditBikePage() {
         setValue("status", bike.status);
         setValue("purchase_date", bike.purchase_date || "");
         setValue("purchase_price", bike.purchase_price || "");
-        setValue("weekly_rate", bike.weekly_rate || "");
         setValue("notes", bike.notes || "");
+        setValue("tyre_size", bike.tyre_size || "");
+        setValue("frame_height_cm", bike.frame_height_cm || "");
+        setValue(
+          "rent_packages",
+          bike.rent_packages?.length ? bike.rent_packages : defaultRentPackages()
+        );
+        setValue("motor_power_w", bike.motor_power_w || "");
       })
       .catch(() => toast.error("Failed to load bike"))
       .finally(() => setLoading(false));
@@ -83,7 +96,7 @@ export default function EditBikePage() {
         body: JSON.stringify({
           ...data,
           purchase_price: data.purchase_price ? Number(data.purchase_price) : 0,
-          weekly_rate: data.weekly_rate ? Number(data.weekly_rate) : 0,
+          rent_packages: data.rent_packages,
         }),
       });
       if (!res.ok) throw new Error("Failed to update");
@@ -100,9 +113,10 @@ export default function EditBikePage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/bikes/${id}`}>← Back</Link>
-        </Button>
+        <BackNavButton href={`/bikes/${id}`}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </BackNavButton>
         <div className="h-64 animate-pulse rounded-lg bg-muted" />
       </div>
     );
@@ -110,12 +124,10 @@ export default function EditBikePage() {
 
   return (
     <div className="space-y-4">
-      <Button variant="ghost" size="sm" asChild>
-        <Link href={`/bikes/${id}`}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to bike
-        </Link>
-      </Button>
+      <BackNavButton href={`/bikes/${id}`}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to bike
+      </BackNavButton>
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle>Edit bike</CardTitle>
@@ -152,14 +164,20 @@ export default function EditBikePage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="weekly_rate">Weekly rate (£)</Label>
+                <Label htmlFor="purchase_date">Purchase date</Label>
+                <Input id="purchase_date" type="date" {...register("purchase_date")} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="purchase_price">Purchase price (£)</Label>
                 <Input
-                  id="weekly_rate"
+                  id="purchase_price"
                   type="number"
                   step="0.01"
-                  {...register("weekly_rate")}
+                  {...register("purchase_price")}
                 />
               </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={status} onValueChange={(v) => setValue("status", v as FormData["status"])}>
@@ -175,21 +193,7 @@ export default function EditBikePage() {
                 </Select>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="purchase_date">Purchase date</Label>
-                <Input id="purchase_date" type="date" {...register("purchase_date")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="purchase_price">Purchase price (£)</Label>
-                <Input
-                  id="purchase_price"
-                  type="number"
-                  step="0.01"
-                  {...register("purchase_price")}
-                />
-              </div>
-            </div>
+            <EbikeFormFields register={register} setValue={setValue} control={control} watch={watch} getValues={getValues} />
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Input id="notes" {...register("notes")} />
@@ -205,6 +209,9 @@ export default function EditBikePage() {
           </form>
         </CardContent>
       </Card>
+      <div className="max-w-2xl">
+        <BikeMediaPanel bikeId={id} />
+      </div>
     </div>
   );
 }

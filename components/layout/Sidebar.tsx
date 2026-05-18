@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   AlertCircle,
   Shield,
+  QrCode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { useSidebar } from "./DashboardShell";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/bikes", label: "Bikes", icon: Bike },
+  { href: "/fleet-qr", label: "Available bikes QR", icon: QrCode },
   { href: "/rentals", label: "Rentals", icon: Calendar },
   { href: "/collected-rent", label: "Collected rent", icon: Banknote },
   { href: "/rentals/pending", label: "Pending Payments", icon: AlertCircle },

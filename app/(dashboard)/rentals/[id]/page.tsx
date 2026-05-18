@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { BackNavButton } from "@/components/navigation/BackNavButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import {
   formatCurrency,
 } from "@/lib/calculations";
 import { format } from "date-fns";
+import { ArrowLeft } from "lucide-react";
 import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
 import { userFacingThrownError } from "@/lib/user-facing-error";
 
@@ -235,9 +237,10 @@ export default function RentalDetailPage() {
   if (loading || !rental) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/rentals">← Rentals</Link>
-        </Button>
+        <BackNavButton href="/rentals">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Rentals
+        </BackNavButton>
         <div className="h-64 animate-pulse rounded-lg bg-muted" />
       </div>
     );
@@ -247,9 +250,10 @@ export default function RentalDetailPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/rentals">← Rentals</Link>
-          </Button>
+          <BackNavButton href="/rentals">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Rentals
+          </BackNavButton>
           <h1 className="text-2xl font-bold">Rental: {rental.bike_name}</h1>
           <RentalStatusBadge status={rental.status as RentalStatus} />
           <PaymentStatusBadge status={rental.payment_status} />

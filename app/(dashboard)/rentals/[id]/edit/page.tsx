@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { BackNavButton } from "@/components/navigation/BackNavButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -130,12 +131,10 @@ export default function EditRentalPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/rentals">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to rentals
-          </Link>
-        </Button>
+        <BackNavButton href="/rentals">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to rentals
+        </BackNavButton>
         <div className="h-64 animate-pulse rounded-lg bg-muted" />
       </div>
     );
@@ -143,12 +142,10 @@ export default function EditRentalPage() {
 
   return (
     <div className="space-y-4">
-      <Button variant="ghost" size="sm" asChild>
-        <Link href={`/rentals/${id}`}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to rental
-        </Link>
-      </Button>
+      <BackNavButton href={`/rentals/${id}`}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to rental
+      </BackNavButton>
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle>Edit rental</CardTitle>

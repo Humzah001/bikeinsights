@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { BackNavButton } from "@/components/navigation/BackNavButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,12 +99,10 @@ function AddExpenseForm() {
 
   return (
     <div className="space-y-4">
-      <Button variant="ghost" size="sm" asChild>
-        <Link href="/expenses">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to expenses
-        </Link>
-      </Button>
+      <BackNavButton href="/expenses">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to expenses
+      </BackNavButton>
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle>Add expense</CardTitle>

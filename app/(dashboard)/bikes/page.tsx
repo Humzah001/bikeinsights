@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BikeCard } from "@/components/bikes/BikeCard";
-import type { Bike, Rental } from "@/lib/types";
+import type { Rental } from "@/lib/types";
+import type { BikeWithCover } from "@/lib/bike-media-urls";
 import { Plus } from "lucide-react";
 import { formatCurrency } from "@/lib/calculations";
 import { useTenantPreferences } from "@/components/tenant/TenantPreferencesProvider";
@@ -16,7 +17,7 @@ type FilterStatus = "all" | "available" | "rented" | "under_repair" | "retired";
 export default function BikesPage() {
   const { currencySymbol } = useTenantPreferences();
   const sym = currencySymbol || "£";
-  const [bikes, setBikes] = useState<Bike[]>([]);
+  const [bikes, setBikes] = useState<BikeWithCover[]>([]);
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [search, setSearch] = useState("");
@@ -111,6 +112,8 @@ export default function BikesPage() {
           <BikeCard
             key={bike.id}
             bike={bike}
+            gallerySlides={bike.gallerySlides}
+            coverImageUrl={bike.coverImageUrl}
             currentRenter={activeRentalByBikeId[bike.id] || null}
             currencySymbol={sym}
           />

@@ -18,6 +18,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { LandingGetStarted } from "@/components/landing/LandingGetStarted";
 import { LandingHeader } from "@/components/landing/LandingHeader";
+import { LandingLeadForm } from "@/components/landing/LandingLeadForm";
+import { LandingPricingCTA } from "@/components/landing/LandingPricingCTA";
 import { LandingProductPreview } from "@/components/landing/LandingProductPreview";
 
 const CONTACT_EMAIL = "hamza@mybikeinsights.com";
@@ -90,13 +92,14 @@ const HIGHLIGHT_FEATURES = [
 
 function CardFeatureHighlights() {
   return (
-    <ul className="mt-4 list-none space-y-2 border-t border-border/60 pt-4 text-sm leading-relaxed">
+    <ul className="-mx-6 mt-4 w-auto list-none space-y-2.5 border-t border-border/60 px-6 pt-4 text-sm leading-snug">
       {HIGHLIGHT_FEATURES.map((item) => (
-        <li key={item} className="text-muted-foreground flex gap-2">
-          <span className="text-primary mt-0.5 shrink-0 font-semibold" aria-hidden>
-            ·
-          </span>
-          <span>{item}</span>
+        <li key={item} className="text-muted-foreground flex items-start gap-2.5">
+          <span
+            className="bg-primary mt-1.5 size-1 shrink-0 rounded-full"
+            aria-hidden
+          />
+          <span className="min-w-0 flex-1">{item}</span>
         </li>
       ))}
     </ul>
@@ -370,8 +373,8 @@ export function LandingPage() {
               , you are talking to the people building the product.
             </p>
 
-            <ul className="mt-10 grid gap-6 sm:grid-cols-2">
-              <li className="rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
+            <ul id="pricing" className="mt-10 grid scroll-mt-20 gap-6 sm:grid-cols-2">
+              <li className="flex flex-col rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h3 className="text-lg font-semibold leading-snug tracking-tight">{PACKAGE_TRIAL.name}</h3>
@@ -384,8 +387,11 @@ export function LandingPage() {
                 <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{PACKAGE_TRIAL.blurb}</p>
                 <p className="text-foreground mt-5 text-xs font-semibold tracking-wide uppercase">Top features</p>
                 <CardFeatureHighlights />
+                <div className="mt-auto w-full pt-6">
+                  <LandingPricingCTA plan="trial" label="Start your free trial" />
+                </div>
               </li>
-              <li className="rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
+              <li className="flex flex-col rounded-2xl border border-border/70 bg-card p-6 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h3 className="text-lg font-semibold leading-snug tracking-tight">{PACKAGE_PAID.name}</h3>
@@ -398,6 +404,9 @@ export function LandingPage() {
                 <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{PACKAGE_PAID.blurb}</p>
                 <p className="text-foreground mt-5 text-xs font-semibold tracking-wide uppercase">Top features</p>
                 <CardFeatureHighlights />
+                <div className="mt-auto w-full pt-6">
+                  <LandingPricingCTA plan="monthly" label="Get the monthly plan" variant="secondary" />
+                </div>
               </li>
             </ul>
 
@@ -406,8 +415,10 @@ export function LandingPage() {
               analytics export, notifications, settings, backups, and secure team access.
             </p>
 
+            <LandingLeadForm className="mt-10" />
+
             <div className="mt-10 rounded-2xl border border-border/70 bg-card p-8 shadow-sm">
-              <p className="text-sm font-medium text-foreground">Email</p>
+              <p className="text-sm font-medium text-foreground">Prefer email?</p>
               <a
                 href={`mailto:${CONTACT_EMAIL}?subject=My%20Bike%20Insights%20-%20trial%20or%20subscription`}
                 className="text-primary mt-2 inline-block text-lg font-medium underline-offset-4 hover:underline"
@@ -415,8 +426,7 @@ export function LandingPage() {
                 {CONTACT_EMAIL}
               </a>
               <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
-                Tell us a bit about your shop and whether you want the trial or a paid plan. We typically reply within one
-                business day.
+                Use the form above for trial or monthly, or write directly. We typically reply within one business day.
               </p>
               <Button className="mt-6" size="lg" asChild>
                 <a href={`mailto:${CONTACT_EMAIL}?subject=My%20Bike%20Insights%20-%20trial%20or%20subscription`}>
@@ -434,6 +444,9 @@ export function LandingPage() {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <Link href="#get-started" className="text-foreground underline-offset-4 hover:underline">
               Get started
+            </Link>
+            <Link href="#pricing" className="text-foreground underline-offset-4 hover:underline">
+              Plans
             </Link>
             <Link href="#faq" className="text-foreground underline-offset-4 hover:underline">
               FAQ

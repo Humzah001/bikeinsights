@@ -1,3 +1,15 @@
+export type BikeMediaKind = "image" | "video";
+
+export interface BikeMedia {
+  id: string;
+  bike_id: string;
+  storage_path: string;
+  media_kind: BikeMediaKind;
+  content_type: string;
+  sort_order: number;
+  created_at: string;
+}
+
 export type BikeStatus = "available" | "rented" | "under_repair" | "retired";
 export type RentalStatus = "active" | "completed" | "overdue" | "inactive";
 export type PaymentStatus = "paid" | "pending" | "partial";
@@ -16,6 +28,20 @@ export type NotificationType =
   | "payment_pending"
   | "week_rent_pending";
 
+/** One rent tier on a bike listing (weekly price, copy for guests). */
+export interface BikeRentPackage {
+  id: string;
+  title: string;
+  description: string;
+  weekly_rate: string;
+  /** Batteries included with this package (not bike-global). */
+  battery_count: "" | "1" | "2";
+  battery_1_capacity_wh: string;
+  battery_2_capacity_wh: string;
+  /** Estimated range (km) for this battery / pricing setup. */
+  max_range_km: string;
+}
+
 export interface Bike {
   id: string;
   name: string;
@@ -26,10 +52,17 @@ export interface Bike {
   status: BikeStatus;
   purchase_date: string;
   purchase_price: string;
+  /** Denormalized: first priced package’s weekly rate (used for new rentals, summaries). */
   weekly_rate: string;
+  rent_packages: BikeRentPackage[];
   image_filename: string;
   notes: string;
   created_at: string;
+  /** E-bike / listing specs (all optional for renters). Battery details live on each rent package. */
+  tyre_size: string;
+  /** Frame or standover height in cm (free text). */
+  frame_height_cm: string;
+  motor_power_w: string;
 }
 
 /** Logged when rent is recorded (weekly, manual add, full settlement, or initial on create). */

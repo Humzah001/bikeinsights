@@ -37,6 +37,15 @@ function isBrokenSession(session: SessionData): boolean {
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
+  if (path === "/api/lead") {
+    return NextResponse.next();
+  }
+
+  /** Public guest pages (e.g. tenant “available bikes” showcase). */
+  if (path.startsWith("/p/")) {
+    return NextResponse.next();
+  }
+
   if (AUTH_API.has(path)) {
     return NextResponse.next();
   }

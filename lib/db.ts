@@ -1,5 +1,6 @@
 import { getSupabase } from "@/lib/supabase/server";
-import type { Bike, Rental, RentalPayment, Repair, Expense, Notification } from "@/lib/types";
+import type { Bike, BikeMedia, Rental, RentalPayment, Repair, Expense, Notification } from "@/lib/types";
+import { rentPackagesFromLegacyRow } from "@/lib/rent-packages";
 import { v4 as uuidv4 } from "uuid";
 
 /** PostgREST: table not exposed or does not exist (migration not applied). */
@@ -58,6 +59,159 @@ export async function updateBike(tenantId: string, id: string, updates: Partial<
 export async function deleteBike(tenantId: string, id: string): Promise<void> {
   const { error } = await getSupabase().from("bikes").delete().eq("tenant_id", tenantId).eq("id", id);
   if (error) throw error;
+}
+
+/** Max media files per bike (sync with `MAX_BIKE_MEDIA_FILES_PER_BIKE` in `lib/upload-bike-media-client.ts`). */
+export const MAX_MEDIA_PER_BIKE = 24;
+
+function isBikeMediaTableMissing(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  if (error.code === "PGRST205") return true;
+  const msg = String(error.message ?? "");
+  return msg.includes("bike_media") && (msg.includes("schema cache") || msg.includes("Could not find the table"));
+}
+
+function rowToBikeMedia(r: Record<string, unknown>): BikeMedia {
+  const path = r.storage_path ?? r.s3_key;
+  return {
+    id: String(r.id ?? ""),
+    bike_id: String(r.bike_id ?? ""),
+    storage_path: String(path ?? ""),
+    media_kind: (r.media_kind as BikeMedia["media_kind"]) ?? "image",
+    content_type: String(r.content_type ?? "application/octet-stream"),
+    sort_order: Number(r.sort_order ?? 0),
+    created_at: r.created_at ? new Date(r.created_at as string).toISOString() : new Date().toISOString(),
+  };
+}
+
+export async function countBikeMedia(tenantId: string, bikeId: string): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from("bike_media")
+    .select("*", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("bike_id", bikeId);
+  if (error) {
+    if (isBikeMediaTableMissing(error)) return 0;
+    throw error;
+  }
+  return count ?? 0;
+}
+
+export async function countBikeMediaVideos(tenantId: string, bikeId: string): Promise<number> {
+  const { count, error } = await getSupabase()
+    .from("bike_media")
+    .select("*", { count: "exact", head: true })
+    .eq("tenant_id", tenantId)
+    .eq("bike_id", bikeId)
+    .eq("media_kind", "video");
+  if (error) {
+    if (isBikeMediaTableMissing(error)) return 0;
+    throw error;
+  }
+  return count ?? 0;
+}
+
+export async function listBikeMediaForBikeIds(tenantId: string, bikeIds: string[]): Promise<BikeMedia[]> {
+  if (bikeIds.length === 0) return [];
+  const { data, error } = await getSupabase()
+    .from("bike_media")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .in("bike_id", bikeIds);
+  if (error) {
+    if (isBikeMediaTableMissing(error)) return [];
+    throw error;
+  }
+  const rows = (data ?? []).map((raw) => rowToBikeMedia(raw as Record<string, unknown>));
+  rows.sort((a, b) => {
+    const bikeCmp = a.bike_id.localeCompare(b.bike_id);
+    if (bikeCmp !== 0) return bikeCmp;
+    const o = a.sort_order - b.sort_order;
+    if (o !== 0) return o;
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+  return rows;
+}
+
+export async function listBikeMediaForBike(tenantId: string, bikeId: string): Promise<BikeMedia[]> {
+  const { data, error } = await getSupabase()
+    .from("bike_media")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("bike_id", bikeId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (error) {
+    if (isBikeMediaTableMissing(error)) return [];
+    throw error;
+  }
+  return (data ?? []).map((row) => rowToBikeMedia(row as Record<string, unknown>));
+}
+
+export async function getBikeMediaById(tenantId: string, bikeId: string, mediaId: string): Promise<BikeMedia | null> {
+  const { data, error } = await getSupabase()
+    .from("bike_media")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("bike_id", bikeId)
+    .eq("id", mediaId)
+    .maybeSingle();
+  if (error) {
+    if (isBikeMediaTableMissing(error)) return null;
+    throw error;
+  }
+  return data ? rowToBikeMedia(data as Record<string, unknown>) : null;
+}
+
+export async function createBikeMedia(
+  tenantId: string,
+  row: Pick<BikeMedia, "id" | "bike_id" | "storage_path" | "media_kind" | "content_type" | "sort_order">
+): Promise<BikeMedia> {
+  const { data, error } = await getSupabase()
+    .from("bike_media")
+    .insert({
+      id: row.id,
+      tenant_id: tenantId,
+      bike_id: row.bike_id,
+      storage_path: row.storage_path,
+      media_kind: row.media_kind,
+      content_type: row.content_type,
+      sort_order: row.sort_order,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToBikeMedia(data as Record<string, unknown>);
+}
+
+export async function deleteBikeMediaRecord(tenantId: string, bikeId: string, mediaId: string): Promise<BikeMedia | null> {
+  const existing = await getBikeMediaById(tenantId, bikeId, mediaId);
+  if (!existing) return null;
+  const { error } = await getSupabase()
+    .from("bike_media")
+    .delete()
+    .eq("tenant_id", tenantId)
+    .eq("bike_id", bikeId)
+    .eq("id", mediaId);
+  if (error) throw error;
+  return existing;
+}
+
+export async function getNextBikeMediaSortOrder(tenantId: string, bikeId: string): Promise<number> {
+  const { data, error } = await getSupabase()
+    .from("bike_media")
+    .select("sort_order")
+    .eq("tenant_id", tenantId)
+    .eq("bike_id", bikeId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    if (isBikeMediaTableMissing(error)) return 0;
+    throw error;
+  }
+  const max = data?.sort_order != null ? Number((data as { sort_order: number }).sort_order) : -1;
+  return max + 1;
 }
 
 export async function getRentals(tenantId: string): Promise<Rental[]> {
@@ -306,6 +460,7 @@ export async function deleteNotification(tenantId: string, id: string): Promise<
 }
 
 function rowToBike(r: Record<string, unknown>): Bike {
+  const rent_packages = rentPackagesFromLegacyRow(r);
   return {
     id: String(r.id ?? ""),
     name: String(r.name ?? ""),
@@ -317,9 +472,13 @@ function rowToBike(r: Record<string, unknown>): Bike {
     purchase_date: String(r.purchase_date ?? ""),
     purchase_price: String(r.purchase_price ?? "0"),
     weekly_rate: String(r.weekly_rate ?? "0"),
+    rent_packages,
     image_filename: String(r.image_filename ?? ""),
     notes: String(r.notes ?? ""),
     created_at: r.created_at ? new Date(r.created_at as string).toISOString() : new Date().toISOString(),
+    tyre_size: String(r.tyre_size ?? ""),
+    frame_height_cm: String(r.frame_height_cm ?? ""),
+    motor_power_w: String(r.motor_power_w ?? ""),
   };
 }
 
@@ -335,8 +494,12 @@ function bikeToRow(b: Partial<Bike>): Record<string, unknown> {
   if (b.purchase_date != null) row.purchase_date = b.purchase_date;
   if (b.purchase_price != null) row.purchase_price = b.purchase_price;
   if (b.weekly_rate != null) row.weekly_rate = b.weekly_rate;
+  if (b.rent_packages != null) row.rent_packages = b.rent_packages;
   if (b.image_filename != null) row.image_filename = b.image_filename;
   if (b.notes != null) row.notes = b.notes;
+  if (b.tyre_size != null) row.tyre_size = b.tyre_size;
+  if (b.frame_height_cm != null) row.frame_height_cm = b.frame_height_cm;
+  if (b.motor_power_w != null) row.motor_power_w = b.motor_power_w;
   return row;
 }
 
